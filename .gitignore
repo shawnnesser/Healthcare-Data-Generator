@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env
+.env.local
+.env.*
+weather_cache.json
+data/*.parquet
+rebuild_final.log
+.vscode/
+*.log
+*.sqlite
+.DS_Store
+Thumbs.db
+# Local config overrides (keep secrets out of repo)
+src/config_local.py

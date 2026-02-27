@@ -1,0 +1,5 @@
+faker
+sqlalchemy
+pyodbc
+pandas
+requests
