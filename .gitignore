@@ -9,6 +9,7 @@ venv/
 .env
 .env.local
 .env.*
+!.env.example
 weather_cache.json
 data/*.parquet
 rebuild_final.log

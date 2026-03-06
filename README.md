@@ -2,6 +2,46 @@
 
 A sophisticated synthetic healthcare data generation system that creates realistic hospital encounter, admission, and operational data with advanced seasonality patterns, weather integration, and occupancy tracking. This tool is designed for testing analytics pipelines, healthcare dashboards, and data engineering workflows without requiring real patient data.
 
+---
+
+## Quick Start (for LLMs and Automated Agents)
+
+```bash
+# 1. Clone
+git clone https://github.com/shawnnesser/Healthcare-Data-Generator.git
+cd Healthcare-Data-Generator
+
+# 2. Create virtual environment & install
+python -m venv .venv
+# Windows: .venv\Scripts\activate | macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+
+# 3. Configure connection (pick ONE method)
+#    Option A — .env file (recommended):
+cp .env.example .env
+#    Edit .env and set CONNECTION_STRING to a URL-encoded ODBC string.
+#    Option B — environment variable:
+#    export CONNECTION_STRING="Driver%3D%7BODBC+Driver+18+for+SQL+Server%7D%3B..."
+#    Option C — no database (Parquet export only, no connection needed):
+python src/main.py --export-parquet
+
+# 4. Run
+python src/main.py                          # incremental: generate today's data
+python src/main.py --rebuild-start 2025-01-01  # full rebuild: 2025-01-01 → today
+python src/main.py --export-parquet            # export to data/*.parquet (no DB)
+```
+
+**Key files an agent needs to know about:**
+| File | Purpose |
+|------|---------|
+| `src/main.py` | Entry point — all CLI flags defined here |
+| `src/config.py` | Reads `CONNECTION_STRING` from env / `.env` / `src/config_local.py` |
+| `.env.example` | Template for connection string (copy to `.env`) |
+| `src/config_local.py` | Alternative local config override (gitignored) |
+| `requirements.txt` | Python dependencies |
+
+---
+
 ## Overview
 
 The Healthcare Data Generator produces multi-table healthcare datasets covering:
@@ -296,20 +336,24 @@ All tables include explicit IDs with collision-free offset logic:
 
 ### Prerequisites
 - Python 3.8+
-- Microsoft SQL Server or Azure SQL (Fabric SQL)
-- ODBC Driver 17 for SQL Server
+- ODBC Driver 18 for SQL Server (required for database modes; not needed for `--export-parquet`)
+- A SQL Server, Azure SQL, or Microsoft Fabric SQL database (optional — Parquet export works without one)
 
 ### Setup
 
 1. **Clone and navigate to project**:
    ```bash
-   cd "Healthcare Data Generator"
+   git clone https://github.com/shawnnesser/Healthcare-Data-Generator.git
+   cd Healthcare-Data-Generator
    ```
 
 2. **Create virtual environment**:
    ```bash
-   python -m venv venv
-   venv\Scripts\activate
+   python -m venv .venv
+   # Windows
+   .venv\Scripts\activate
+   # macOS / Linux
+   source .venv/bin/activate
    ```
 
 3. **Install dependencies**:
@@ -317,17 +361,41 @@ All tables include explicit IDs with collision-free offset logic:
    pip install -r requirements.txt
    ```
 
-4. **Configure database connection**:
-   - Edit `src/config.py`
-   - Update `CONNECTION_STRING` with your SQL Server / Fabric SQL connection details
-   - Example:
-     ```python
-     CONNECTION_STRING = "mssql+pyodbc://username:password@server/database?driver=ODBC+Driver+17+for+SQL+Server"
-     ```
+4. **Configure database connection** (choose one):
+
+   **Option A — `.env` file (recommended)**:
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` and set `CONNECTION_STRING` to a **URL-encoded** ODBC connection string.  
+   See `.env.example` for format examples.
+
+   **Option B — `src/config_local.py`**:
+   ```python
+   # src/config_local.py  (this file is gitignored)
+   import urllib.parse
+   CONN_ODBC = (
+       "Driver={ODBC Driver 18 for SQL Server};"
+       "Server=your-server.database.fabric.microsoft.com,1433;"
+       "Database=your-database;"
+       "Encrypt=yes;TrustServerCertificate=no;Authentication=ActiveDirectoryInteractive"
+   )
+   CONNECTION_STRING = urllib.parse.quote_plus(CONN_ODBC)
+   ```
+
+   **Option C — Environment variable**:
+   ```bash
+   export CONNECTION_STRING="Driver%3D%7BODBC+Driver+18+for+SQL+Server%7D%3BServer%3D..."
+   ```
+
+   **Option D — No database (Parquet only)**:  
+   Skip this step entirely and use `--export-parquet`.
 
 5. **Run the generator**:
    ```bash
-   python src/main.py
+   python src/main.py                             # daily incremental
+   python src/main.py --rebuild-start 2025-01-01   # full history rebuild
+   python src/main.py --export-parquet             # export to data/*.parquet
    ```
 
 ## Usage

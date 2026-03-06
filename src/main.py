@@ -38,8 +38,21 @@ import json
 # Initialize Faker
 fake = Faker()
 
-# Create database engine
-engine = create_engine(f'mssql+pyodbc:///?odbc_connect={CONNECTION_STRING}')
+# Lazy database engine — created on first access so the app can run
+# without a connection string (e.g. --export-parquet mode).
+_engine = None
+
+def get_engine():
+    global _engine
+    if _engine is None:
+        if not CONNECTION_STRING:
+            raise RuntimeError(
+                "No database connection string configured.\n"
+                "Set the CONNECTION_STRING environment variable or create src/config_local.py.\n"
+                "See .env.example for the expected format."
+            )
+        _engine = create_engine(f'mssql+pyodbc:///?odbc_connect={CONNECTION_STRING}')
+    return _engine
 
 # Weather cache (date -> condition mapping) to avoid repeated API calls
 WEATHER_CACHE = {}
@@ -72,7 +85,7 @@ def get_next_id(table_name, id_col):
     """
     try:
         q = f"SELECT MAX({id_col}) as max_id FROM {table_name}"
-        df = pd.read_sql(q, engine)
+        df = pd.read_sql(q, get_engine())
         max_id = df.iloc[0]['max_id']
         if pd.isna(max_id) or max_id is None:
             return 1
@@ -844,7 +857,7 @@ def export_to_parquet(dataframes, output_dir='data'):
 
 def get_table_columns(table_name):
     try:
-        df = pd.read_sql(f"SELECT TOP 0 * FROM {table_name}", engine)
+        df = pd.read_sql(f"SELECT TOP 0 * FROM {table_name}", get_engine())
         return [c for c in df.columns]
     except Exception:
         return []
@@ -853,7 +866,7 @@ def get_table_columns(table_name):
 def get_encounter_date_range():
     """Return (min_date, max_date) from encounters table as date objects, or (None, None)."""
     try:
-        df = pd.read_sql("SELECT MIN(encounter_date) as min_d, MAX(encounter_date) as max_d FROM encounters", engine)
+        df = pd.read_sql("SELECT MIN(encounter_date) as min_d, MAX(encounter_date) as max_d FROM encounters", get_engine())
         min_d = df.iloc[0]['min_d']
         max_d = df.iloc[0]['max_d']
         if pd.isna(min_d) or pd.isna(max_d):
@@ -1131,7 +1144,7 @@ def create_current_er_beds_view():
     ) b ON h.hospital_id = b.hospital_id;
     """
     try:
-        with engine.begin() as conn:
+        with get_engine().begin() as conn:
             conn.execute(text(sql))
     except Exception as e:
         print('Warning: could not create vw_current_er_beds view:', e)
@@ -1171,7 +1184,7 @@ def create_current_patient_beds_view():
         ) o ON h.hospital_id = o.hospital_id;
         """
         try:
-                with engine.begin() as conn:
+                with get_engine().begin() as conn:
                         conn.execute(text(sql))
         except Exception as e:
                 print('Warning: could not create vw_current_patient_beds view:', e)
@@ -1207,7 +1220,7 @@ def main(frequency='once', export_parquet=False, rebuild_start=None):
         print(f"[REBUILD] Full rebuild requested: {start_date} -> {end_date} ({days} days). Truncating and repopulating tables.")
         # Generate & write date dimension once for full rebuild range
         date_dim_df = generate_date_dimension(start_date, end_date)
-        date_dim_df.to_sql('date_dim', engine, if_exists='replace', index=False)
+        date_dim_df.to_sql('date_dim', get_engine(), if_exists='replace', index=False)
 
         # daily counts
         patient_count = 50
@@ -1361,41 +1374,41 @@ def main(frequency='once', export_parquet=False, rebuild_start=None):
 
             # Insert into DB (replace on first day to recreate schema, append afterwards)
             if first:
-                hospitals_df.to_sql('hospitals', engine, if_exists='replace', index=False)
-                departments_df.to_sql('departments', engine, if_exists='replace', index=False)
-                patients_df.to_sql('patients', engine, if_exists='replace', index=False)
-                doctors_df.to_sql('doctors', engine, if_exists='replace', index=False)
-                procedures_df.to_sql('procedures', engine, if_exists='replace', index=False)
-                encounters_df.to_sql('encounters', engine, if_exists='replace', index=False)
-                diagnoses_df.to_sql('diagnoses', engine, if_exists='replace', index=False)
-                medications_df.to_sql('medications', engine, if_exists='replace', index=False)
-                labs_df.to_sql('labs', engine, if_exists='replace', index=False)
-                insurance_df.to_sql('insurance', engine, if_exists='replace', index=False)
-                billing_df.to_sql('billing', engine, if_exists='replace', index=False)
-                admissions_df.to_sql('admissions', engine, if_exists='replace', index=False)
+                hospitals_df.to_sql('hospitals', get_engine(), if_exists='replace', index=False)
+                departments_df.to_sql('departments', get_engine(), if_exists='replace', index=False)
+                patients_df.to_sql('patients', get_engine(), if_exists='replace', index=False)
+                doctors_df.to_sql('doctors', get_engine(), if_exists='replace', index=False)
+                procedures_df.to_sql('procedures', get_engine(), if_exists='replace', index=False)
+                encounters_df.to_sql('encounters', get_engine(), if_exists='replace', index=False)
+                diagnoses_df.to_sql('diagnoses', get_engine(), if_exists='replace', index=False)
+                medications_df.to_sql('medications', get_engine(), if_exists='replace', index=False)
+                labs_df.to_sql('labs', get_engine(), if_exists='replace', index=False)
+                insurance_df.to_sql('insurance', get_engine(), if_exists='replace', index=False)
+                billing_df.to_sql('billing', get_engine(), if_exists='replace', index=False)
+                admissions_df.to_sql('admissions', get_engine(), if_exists='replace', index=False)
                 # generate department bed allocations for this day and write
                 dept_beds_df = generate_hospital_department_beds(hospitals_df, departments_df, day)
-                dept_beds_df.to_sql('hospital_department_beds', engine, if_exists='replace', index=False)
+                dept_beds_df.to_sql('hospital_department_beds', get_engine(), if_exists='replace', index=False)
                 # create or update ER beds view
                 create_current_er_beds_view()
                 # create or update patient beds view
                 create_current_patient_beds_view()
                 first = False
             else:
-                patients_df.to_sql('patients', engine, if_exists='append', index=False)
-                doctors_df.to_sql('doctors', engine, if_exists='append', index=False)
-                procedures_df.to_sql('procedures', engine, if_exists='append', index=False)
-                encounters_df.to_sql('encounters', engine, if_exists='append', index=False)
-                diagnoses_df.to_sql('diagnoses', engine, if_exists='append', index=False)
-                medications_df.to_sql('medications', engine, if_exists='append', index=False)
-                labs_df.to_sql('labs', engine, if_exists='append', index=False)
-                insurance_df.to_sql('insurance', engine, if_exists='append', index=False)
-                billing_df.to_sql('billing', engine, if_exists='append', index=False)
+                patients_df.to_sql('patients', get_engine(), if_exists='append', index=False)
+                doctors_df.to_sql('doctors', get_engine(), if_exists='append', index=False)
+                procedures_df.to_sql('procedures', get_engine(), if_exists='append', index=False)
+                encounters_df.to_sql('encounters', get_engine(), if_exists='append', index=False)
+                diagnoses_df.to_sql('diagnoses', get_engine(), if_exists='append', index=False)
+                medications_df.to_sql('medications', get_engine(), if_exists='append', index=False)
+                labs_df.to_sql('labs', get_engine(), if_exists='append', index=False)
+                insurance_df.to_sql('insurance', get_engine(), if_exists='append', index=False)
+                billing_df.to_sql('billing', get_engine(), if_exists='append', index=False)
                 if not admissions_df.empty:
-                    admissions_df.to_sql('admissions', engine, if_exists='append', index=False)
+                    admissions_df.to_sql('admissions', get_engine(), if_exists='append', index=False)
                 # append department bed allocations for this day
                 dept_beds_df = generate_hospital_department_beds(hospitals_df, departments_df, day)
-                dept_beds_df.to_sql('hospital_department_beds', engine, if_exists='append', index=False)
+                dept_beds_df.to_sql('hospital_department_beds', get_engine(), if_exists='append', index=False)
                 create_current_er_beds_view()
                 create_current_patient_beds_view()
 
@@ -1417,7 +1430,7 @@ def main(frequency='once', export_parquet=False, rebuild_start=None):
 
     # Get the last run timestamp to generate dates since then
     try:
-        last_run_df = pd.read_sql("SELECT MAX(run_timestamp) as last_run FROM run_logs", engine)
+        last_run_df = pd.read_sql("SELECT MAX(run_timestamp) as last_run FROM run_logs", get_engine())
         last_run = last_run_df.iloc[0]['last_run']
         if pd.isna(last_run):
             last_run = datetime(2026, 1, 1)  # Default to start of year if no logs
@@ -1633,31 +1646,31 @@ def main(frequency='once', export_parquet=False, rebuild_start=None):
         if combined_min and combined_max:
             date_dim_df = generate_date_dimension(combined_min, combined_max)
             # Replace date_dim to ensure it covers full required range
-            date_dim_df.to_sql('date_dim', engine, if_exists='replace', index=False)
+            date_dim_df.to_sql('date_dim', get_engine(), if_exists='replace', index=False)
 
         print("💾 Inserting data into database...")
-        hospitals_df.to_sql('hospitals', engine, if_exists='replace', index=False)
-        departments_df.to_sql('departments', engine, if_exists='replace', index=False)
+        hospitals_df.to_sql('hospitals', get_engine(), if_exists='replace', index=False)
+        departments_df.to_sql('departments', get_engine(), if_exists='replace', index=False)
         # generate department bed allocations for today's incremental load
         today = pd.to_datetime(datetime.now()).date()
         dept_beds_df = generate_hospital_department_beds(hospitals_df, departments_df, today)
         # upsert strategy: append row for today; if table missing, to_sql will create it
-        dept_beds_df.to_sql('hospital_department_beds', engine, if_exists='append', index=False)
+        dept_beds_df.to_sql('hospital_department_beds', get_engine(), if_exists='append', index=False)
         # write admissions for today
         if not admissions_df.empty:
-            admissions_df.to_sql('admissions', engine, if_exists='append', index=False)
+            admissions_df.to_sql('admissions', get_engine(), if_exists='append', index=False)
         create_current_er_beds_view()
         create_current_patient_beds_view()
         # Align DataFrames with existing DB schema to avoid inserting unknown columns
-        align_df_to_table(patients_df, 'patients').to_sql('patients', engine, if_exists='append', index=False)
-        align_df_to_table(doctors_df, 'doctors').to_sql('doctors', engine, if_exists='append', index=False)
-        align_df_to_table(procedures_df, 'procedures').to_sql('procedures', engine, if_exists='append', index=False)
-        align_df_to_table(encounters_df, 'encounters').to_sql('encounters', engine, if_exists='append', index=False)
-        align_df_to_table(diagnoses_df, 'diagnoses').to_sql('diagnoses', engine, if_exists='append', index=False)
-        align_df_to_table(medications_df, 'medications').to_sql('medications', engine, if_exists='append', index=False)
-        align_df_to_table(labs_df, 'labs').to_sql('labs', engine, if_exists='append', index=False)
-        align_df_to_table(insurance_df, 'insurance').to_sql('insurance', engine, if_exists='append', index=False)
-        align_df_to_table(billing_df, 'billing').to_sql('billing', engine, if_exists='append', index=False)
+        align_df_to_table(patients_df, 'patients').to_sql('patients', get_engine(), if_exists='append', index=False)
+        align_df_to_table(doctors_df, 'doctors').to_sql('doctors', get_engine(), if_exists='append', index=False)
+        align_df_to_table(procedures_df, 'procedures').to_sql('procedures', get_engine(), if_exists='append', index=False)
+        align_df_to_table(encounters_df, 'encounters').to_sql('encounters', get_engine(), if_exists='append', index=False)
+        align_df_to_table(diagnoses_df, 'diagnoses').to_sql('diagnoses', get_engine(), if_exists='append', index=False)
+        align_df_to_table(medications_df, 'medications').to_sql('medications', get_engine(), if_exists='append', index=False)
+        align_df_to_table(labs_df, 'labs').to_sql('labs', get_engine(), if_exists='append', index=False)
+        align_df_to_table(insurance_df, 'insurance').to_sql('insurance', get_engine(), if_exists='append', index=False)
+        align_df_to_table(billing_df, 'billing').to_sql('billing', get_engine(), if_exists='append', index=False)
 
         # Log the run
         run_log = {
@@ -1674,7 +1687,7 @@ def main(frequency='once', export_parquet=False, rebuild_start=None):
             'billing_generated': len(billing_df)
         }
         run_log_df = pd.DataFrame([run_log])
-        run_log_df.to_sql('run_logs', engine, if_exists='append', index=False)
+        run_log_df.to_sql('run_logs', get_engine(), if_exists='append', index=False)
 
         print(f"\n✅ Data generation complete!")
         print(f"   Frequency: {frequency}")

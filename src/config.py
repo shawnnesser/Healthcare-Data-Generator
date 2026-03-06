@@ -1,18 +1,23 @@
 # Database configuration
-# Replace with your Fabric SQL Database details
+# Provide your connection string via ONE of these methods (checked in order):
+#   1. Environment variable  CONNECTION_STRING  (highest priority)
+#   2. A .env file in the project root  (loaded automatically by python-dotenv)
+#   3. A local override file  src/config_local.py  (gitignored)
+# See .env.example for the expected format.
 
-SERVER = 'your-server.database.windows.net'
-DATABASE = 'your-database'
-USERNAME = 'your-username'
-PASSWORD = 'your-password'
-DRIVER = '{ODBC Driver 18 for SQL Server}'
-
-# Connection string
-# The connection string must not be committed to source control. Provide it via environment variable
-# or by creating a local non-tracked file `src/config_local.py` containing CONNECTION_STRING.
 import os
+from pathlib import Path
+
+# Load .env file from project root if it exists
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).resolve().parents[1] / '.env'
+    if _env_path.exists():
+        load_dotenv(_env_path)
+except ImportError:
+    pass  # python-dotenv is optional; env vars can be set directly
+
 # Optional local override file (create `src/config_local.py`, add to .gitignore)
-# Try relative import (package context), fall back to absolute import when running scripts directly
 LOCAL_CONNECTION_STRING = None
 try:
     from .config_local import CONNECTION_STRING as LOCAL_CONNECTION_STRING
@@ -22,10 +27,11 @@ except Exception:
     except Exception:
         LOCAL_CONNECTION_STRING = None
 
-# Environment variable takes precedence
+# Environment variable takes precedence, then config_local.py
 CONNECTION_STRING = os.getenv('CONNECTION_STRING') or LOCAL_CONNECTION_STRING or None
 
-# If CONNECTION_STRING is None, the runtime will need to provide it; do NOT hardcode secrets here.
+# If CONNECTION_STRING is still None at runtime, database modes will fail with a
+# clear error message. Parquet-only export (--export-parquet) works without it.
 
 # Seasonality multipliers for realistic hospital patterns
 # Based on CDC/NHS data on ED visit patterns and procedure seasonality
