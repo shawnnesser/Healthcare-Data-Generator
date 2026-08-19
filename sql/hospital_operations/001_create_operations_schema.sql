@@ -1,0 +1,24 @@
+-- ============================================================================
+-- 001_create_operations_schema.sql
+-- Hospital Operations - schema/namespace decision
+-- ============================================================================
+-- DECISION (see docs/HOSPITAL_OPERATIONS_EXISTING_MODEL_ANALYSIS.md section 6/10):
+-- This project uses an `ops_` TABLE-NAME PREFIX in the default `dbo` schema
+-- instead of a dedicated `hospital_operations` SQL schema. Rationale:
+--   1. The existing Healthcare Data Generator never uses non-dbo schemas.
+--   2. A plain prefix is guaranteed to behave identically across SQL Server,
+--      Azure SQL Database, and Microsoft Fabric SQL Database (Principle #13
+--      in the feature request - "preserve compatibility ... to the extent
+--      supported by the existing repository").
+--   3. It keeps every ops object trivially greppable/droppable (see
+--      008_drop_operations_objects.sql) without relying on schema-transfer
+--      operations that are unverified on Fabric SQL Database.
+--
+-- This script is intentionally a no-op placeholder documenting that decision
+-- and is safe to run on any target. If a dedicated schema is later confirmed
+-- to work end-to-end on the target platform, tables can be migrated with:
+--   CREATE SCHEMA hospital_operations;
+--   ALTER SCHEMA hospital_operations TRANSFER dbo.ops_building;
+--   -- ... repeat per table, then update all view definitions.
+-- ============================================================================
+SELECT 'hospital_operations: using ops_ table-name prefix in dbo schema (see 001_create_operations_schema.sql)' AS decision;

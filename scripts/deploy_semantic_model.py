@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Deploy (create or update) a Fabric notebook from a local .ipynb file.
+"""Deploy (create or update) the Healthcare Data Model Fabric semantic model
+from the local TMSL files under fabric_items/Healthcare_Data_Model/.
 
-If a notebook with the given display name already exists in the workspace,
-its definition is updated in place (POST .../updateDefinition). Otherwise a
-new notebook item is created (POST .../notebooks).
+If a semantic model with the given display name already exists in the
+workspace, its definition is updated in place (POST .../updateDefinition).
+Otherwise a new semantic model item is created (POST .../semanticModels).
 
 Usage:
-    python scripts/deploy_notebook.py --notebook-path notebooks/healthcare_data_generator_fabric_inlined.ipynb --notebook-name Healthcare_Data_Generator
-    python scripts/deploy_notebook.py --notebook-path notebooks/healthcare_data_validation.ipynb --notebook-name Healthcare_Data_Validation
+    python scripts/deploy_semantic_model.py --model-name Healthcare_Data_Model --folder-name "Healthcare Provider Simulation"
 """
 import argparse
 import base64
@@ -21,6 +21,7 @@ from pathlib import Path
 
 WORKSPACE_ID = "8ecba42e-a6c5-4672-854f-d570b4f45d10"
 API_ROOT = "https://api.fabric.microsoft.com/v1"
+MODEL_DIR = Path(__file__).resolve().parents[1] / "fabric_items" / "Healthcare_Data_Model"
 
 
 def get_access_token():
@@ -56,15 +57,15 @@ def api_request(url, token, method='GET', body=None):
         return e.code, payload, e.headers.get('Location') if e.headers else None
 
 
-def find_notebook_id(token, workspace_id, notebook_name):
-    url = f"{API_ROOT}/workspaces/{workspace_id}/notebooks"
+def find_semantic_model_id(token, workspace_id, model_name):
+    url = f"{API_ROOT}/workspaces/{workspace_id}/semanticModels"
     status, payload, _ = api_request(url, token)
     if status != 200:
-        print(f"Failed to list notebooks (HTTP {status}): {payload}")
+        print(f"Failed to list semantic models (HTTP {status}): {payload}")
         return None
-    for nb in payload.get('value', []):
-        if nb.get('displayName') == notebook_name:
-            return nb.get('id')
+    for sm in payload.get('value', []):
+        if sm.get('displayName') == model_name:
+            return sm.get('id')
     return None
 
 
@@ -104,16 +105,21 @@ def poll_lro(token, location):
     return False
 
 
-def build_definition(notebook_path):
-    notebook_content = json.loads(Path(notebook_path).read_text(encoding='utf-8'))
+def _part(path, payload_bytes):
     return {
-        'format': 'ipynb',
+        'path': path,
+        'payloadType': 'InlineBase64',
+        'payload': base64.b64encode(payload_bytes).decode('utf-8'),
+    }
+
+
+def build_definition(model_dir: Path):
+    model_bim = (model_dir / 'model.bim').read_bytes()
+    pbism = (model_dir / 'definition.pbism').read_bytes()
+    return {
         'parts': [
-            {
-                'path': 'notebook-content.ipynb',
-                'payloadType': 'InlineBase64',
-                'payload': base64.b64encode(json.dumps(notebook_content).encode('utf-8')).decode('utf-8')
-            }
+            _part('model.bim', model_bim),
+            _part('definition.pbism', pbism),
         ]
     }
 
@@ -121,10 +127,15 @@ def build_definition(notebook_path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--workspace-id', default=WORKSPACE_ID)
-    parser.add_argument('--notebook-path', required=True)
-    parser.add_argument('--notebook-name', required=True)
-    parser.add_argument('--folder-name', help='Fabric workspace folder to place the notebook in (created if missing)')
+    parser.add_argument('--model-dir', default=str(MODEL_DIR))
+    parser.add_argument('--model-name', required=True)
+    parser.add_argument('--folder-name', help='Fabric workspace folder to place the semantic model in (created if missing)')
     args = parser.parse_args()
+
+    model_dir = Path(args.model_dir)
+    if not (model_dir / 'model.bim').exists():
+        print(f"model.bim not found under {model_dir} -- run scripts/build_semantic_model.py first.")
+        sys.exit(1)
 
     token = get_access_token()
     if not token:
@@ -137,41 +148,41 @@ def main():
         if not folder_id:
             sys.exit(1)
 
-    definition = build_definition(args.notebook_path)
-    notebook_id = find_notebook_id(token, args.workspace_id, args.notebook_name)
+    definition = build_definition(model_dir)
+    model_id = find_semantic_model_id(token, args.workspace_id, args.model_name)
 
-    if notebook_id:
-        print(f"Found existing notebook '{args.notebook_name}' ({notebook_id}) -- updating definition...")
-        url = f"{API_ROOT}/workspaces/{args.workspace_id}/items/{notebook_id}/updateDefinition"
+    if model_id:
+        print(f"Found existing semantic model '{args.model_name}' ({model_id}) -- updating definition...")
+        url = f"{API_ROOT}/workspaces/{args.workspace_id}/items/{model_id}/updateDefinition"
         status, payload, location = api_request(url, token, method='POST', body={'definition': definition})
-        if status != 202:
+        if status not in (200, 202):
             print(f"Update failed (HTTP {status}): {payload}")
             sys.exit(1)
         ok = poll_lro(token, location) if location else True
         print("Update complete." if ok else "Update did not report success -- check the Fabric portal.")
         if folder_id:
-            if move_item_to_folder(token, args.workspace_id, notebook_id, folder_id):
+            if move_item_to_folder(token, args.workspace_id, model_id, folder_id):
                 print(f"Moved into folder '{args.folder_name}'.")
     else:
-        print(f"Notebook '{args.notebook_name}' not found -- creating new notebook...")
-        url = f"{API_ROOT}/workspaces/{args.workspace_id}/notebooks"
-        create_body = {'displayName': args.notebook_name, 'definition': definition}
+        print(f"Semantic model '{args.model_name}' not found -- creating new semantic model...")
+        url = f"{API_ROOT}/workspaces/{args.workspace_id}/semanticModels"
+        create_body = {'displayName': args.model_name, 'definition': definition}
         if folder_id:
             create_body['folderId'] = folder_id
         status, payload, location = api_request(url, token, method='POST', body=create_body)
         if status not in (200, 201, 202):
             print(f"Create failed (HTTP {status}): {payload}")
             sys.exit(1)
-        notebook_id = payload.get('id') if payload else None
-        if not notebook_id and status == 202 and location:
+        model_id = payload.get('id') if payload else None
+        if not model_id and status == 202 and location:
             poll_lro(token, location)
-            notebook_id = find_notebook_id(token, args.workspace_id, args.notebook_name)
-        if not notebook_id:
-            print("Created, but could not determine the new notebook ID.")
+            model_id = find_semantic_model_id(token, args.workspace_id, args.model_name)
+        if not model_id:
+            print("Created, but could not determine the new semantic model ID.")
             sys.exit(1)
-        print(f"Created notebook '{args.notebook_name}' ({notebook_id}).")
+        print(f"Created semantic model '{args.model_name}' ({model_id}).")
 
-    print(f"\nFabric URL: https://app.fabric.microsoft.com/groups/{args.workspace_id}/notebooks/{notebook_id}")
+    print(f"\nFabric URL: https://app.fabric.microsoft.com/groups/{args.workspace_id}/datasets/{model_id}")
 
 
 if __name__ == '__main__':

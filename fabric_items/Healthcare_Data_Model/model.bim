@@ -1,0 +1,3873 @@
+{
+  "compatibilityLevel": 1567,
+  "model": {
+    "culture": "en-US",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "en-US",
+    "tables": [
+      {
+        "name": "date_dim",
+        "columns": [
+          {
+            "name": "date",
+            "dataType": "dateTime",
+            "sourceColumn": "date",
+            "summarizeBy": "none",
+            "formatString": "Long Date",
+            "isKey": true
+          },
+          {
+            "name": "date_key",
+            "dataType": "int64",
+            "sourceColumn": "date_key",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "yyyy",
+            "dataType": "int64",
+            "sourceColumn": "yyyy",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "mm",
+            "dataType": "int64",
+            "sourceColumn": "mm",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "mm_name",
+            "dataType": "string",
+            "sourceColumn": "mm_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "mm_short",
+            "dataType": "string",
+            "sourceColumn": "mm_short",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "dd",
+            "dataType": "int64",
+            "sourceColumn": "dd",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "day_of_week",
+            "dataType": "int64",
+            "sourceColumn": "day_of_week",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "day_of_week_name",
+            "dataType": "string",
+            "sourceColumn": "day_of_week_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "is_weekend",
+            "dataType": "int64",
+            "sourceColumn": "is_weekend",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "quarter",
+            "dataType": "int64",
+            "sourceColumn": "quarter",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "iso_year",
+            "dataType": "int64",
+            "sourceColumn": "iso_year",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "iso_week",
+            "dataType": "int64",
+            "sourceColumn": "iso_week",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "day_of_year",
+            "dataType": "int64",
+            "sourceColumn": "day_of_year",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "week_of_year",
+            "dataType": "int64",
+            "sourceColumn": "week_of_year",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fiscal_year",
+            "dataType": "int64",
+            "sourceColumn": "fiscal_year",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "fiscal_month",
+            "dataType": "int64",
+            "sourceColumn": "fiscal_month",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "mm_dd_yyyy",
+            "dataType": "string",
+            "sourceColumn": "mm_dd_yyyy",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "dd_mm_yyyy",
+            "dataType": "string",
+            "sourceColumn": "dd_mm_yyyy",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "yyyy_mm_dd",
+            "dataType": "string",
+            "sourceColumn": "yyyy_mm_dd",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "date_dim-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"date_dim\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "hospitals",
+        "columns": [
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "name",
+            "dataType": "string",
+            "sourceColumn": "name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_count",
+            "dataType": "int64",
+            "sourceColumn": "bed_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "specialty",
+            "dataType": "string",
+            "sourceColumn": "specialty",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "hospitals-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"hospitals\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "departments",
+        "columns": [
+          {
+            "name": "department_id",
+            "dataType": "int64",
+            "sourceColumn": "department_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "name",
+            "dataType": "string",
+            "sourceColumn": "name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "specialty_type",
+            "dataType": "string",
+            "sourceColumn": "specialty_type",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "departments-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"departments\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "hospital_department_beds",
+        "columns": [
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "department_id",
+            "dataType": "int64",
+            "sourceColumn": "department_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "date",
+            "dataType": "dateTime",
+            "sourceColumn": "date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "beds_allocated",
+            "dataType": "int64",
+            "sourceColumn": "beds_allocated",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "hospital_department_beds-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"hospital_department_beds\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "patients",
+        "columns": [
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "first_name",
+            "dataType": "string",
+            "sourceColumn": "first_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "last_name",
+            "dataType": "string",
+            "sourceColumn": "last_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "date_of_birth",
+            "dataType": "dateTime",
+            "sourceColumn": "date_of_birth",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "age",
+            "dataType": "int64",
+            "sourceColumn": "age",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "gender",
+            "dataType": "string",
+            "sourceColumn": "gender",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "address",
+            "dataType": "string",
+            "sourceColumn": "address",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "phone",
+            "dataType": "string",
+            "sourceColumn": "phone",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "email",
+            "dataType": "string",
+            "sourceColumn": "email",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "primary_payer",
+            "dataType": "string",
+            "sourceColumn": "primary_payer",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "patients-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"patients\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "doctors",
+        "columns": [
+          {
+            "name": "provider_id",
+            "dataType": "int64",
+            "sourceColumn": "provider_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "first_name",
+            "dataType": "string",
+            "sourceColumn": "first_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "last_name",
+            "dataType": "string",
+            "sourceColumn": "last_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "specialty",
+            "dataType": "string",
+            "sourceColumn": "specialty",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "license_number",
+            "dataType": "int64",
+            "sourceColumn": "license_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "phone",
+            "dataType": "string",
+            "sourceColumn": "phone",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "email",
+            "dataType": "string",
+            "sourceColumn": "email",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "doctors-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"doctors\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "encounters",
+        "columns": [
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "department_id",
+            "dataType": "int64",
+            "sourceColumn": "department_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "provider_id",
+            "dataType": "int64",
+            "sourceColumn": "provider_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "encounter_type",
+            "dataType": "string",
+            "sourceColumn": "encounter_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "encounter_date",
+            "dataType": "dateTime",
+            "sourceColumn": "encounter_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "start_time",
+            "dataType": "string",
+            "sourceColumn": "start_time",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "end_time",
+            "dataType": "string",
+            "sourceColumn": "end_time",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "payer_type",
+            "dataType": "string",
+            "sourceColumn": "payer_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "chief_complaint",
+            "dataType": "string",
+            "sourceColumn": "chief_complaint",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "notes",
+            "dataType": "string",
+            "sourceColumn": "notes",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "encounters-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"encounters\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "admissions",
+        "columns": [
+          {
+            "name": "admission_id",
+            "dataType": "int64",
+            "sourceColumn": "admission_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "department_id",
+            "dataType": "int64",
+            "sourceColumn": "department_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "admit_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "admit_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "discharge_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "discharge_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "admissions-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"admissions\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "diagnoses",
+        "columns": [
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "icd_code",
+            "dataType": "string",
+            "sourceColumn": "icd_code",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "description",
+            "dataType": "string",
+            "sourceColumn": "description",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "onset_date",
+            "dataType": "dateTime",
+            "sourceColumn": "onset_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "status",
+            "dataType": "string",
+            "sourceColumn": "status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "diagnosis_id",
+            "dataType": "int64",
+            "sourceColumn": "diagnosis_id",
+            "summarizeBy": "none",
+            "isKey": true
+          }
+        ],
+        "partitions": [
+          {
+            "name": "diagnoses-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"diagnoses\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "procedures",
+        "columns": [
+          {
+            "name": "procedure_id",
+            "dataType": "int64",
+            "sourceColumn": "procedure_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "procedure_name",
+            "dataType": "string",
+            "sourceColumn": "procedure_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "procedure_date",
+            "dataType": "dateTime",
+            "sourceColumn": "procedure_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "cost",
+            "dataType": "double",
+            "sourceColumn": "cost",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "duration_minutes",
+            "dataType": "int64",
+            "sourceColumn": "duration_minutes",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "procedures-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"procedures\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "medications",
+        "columns": [
+          {
+            "name": "medication_id",
+            "dataType": "int64",
+            "sourceColumn": "medication_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "drug_name",
+            "dataType": "string",
+            "sourceColumn": "drug_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "dosage",
+            "dataType": "string",
+            "sourceColumn": "dosage",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "frequency",
+            "dataType": "string",
+            "sourceColumn": "frequency",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "start_date",
+            "dataType": "dateTime",
+            "sourceColumn": "start_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "end_date",
+            "dataType": "dateTime",
+            "sourceColumn": "end_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "prescribing_provider_id",
+            "dataType": "int64",
+            "sourceColumn": "prescribing_provider_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status",
+            "dataType": "string",
+            "sourceColumn": "status",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "medications-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"medications\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "labs",
+        "columns": [
+          {
+            "name": "lab_id",
+            "dataType": "int64",
+            "sourceColumn": "lab_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "test_name",
+            "dataType": "string",
+            "sourceColumn": "test_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "test_code",
+            "dataType": "string",
+            "sourceColumn": "test_code",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "order_date",
+            "dataType": "dateTime",
+            "sourceColumn": "order_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "result_date",
+            "dataType": "dateTime",
+            "sourceColumn": "result_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "value",
+            "dataType": "string",
+            "sourceColumn": "value",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "units",
+            "dataType": "string",
+            "sourceColumn": "units",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "reference_range",
+            "dataType": "string",
+            "sourceColumn": "reference_range",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status",
+            "dataType": "string",
+            "sourceColumn": "status",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "labs-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"labs\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "insurance",
+        "columns": [
+          {
+            "name": "insurance_id",
+            "dataType": "int64",
+            "sourceColumn": "insurance_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "payer_name",
+            "dataType": "string",
+            "sourceColumn": "payer_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "policy_number",
+            "dataType": "int64",
+            "sourceColumn": "policy_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "group_number",
+            "dataType": "int64",
+            "sourceColumn": "group_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "effective_date",
+            "dataType": "dateTime",
+            "sourceColumn": "effective_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "expiration_date",
+            "dataType": "dateTime",
+            "sourceColumn": "expiration_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "insurance-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"insurance\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "billing",
+        "columns": [
+          {
+            "name": "billing_id",
+            "dataType": "int64",
+            "sourceColumn": "billing_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "total_charges",
+            "dataType": "double",
+            "sourceColumn": "total_charges",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "paid_amount",
+            "dataType": "double",
+            "sourceColumn": "paid_amount",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "balance",
+            "dataType": "double",
+            "sourceColumn": "balance",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "claim_status",
+            "dataType": "string",
+            "sourceColumn": "claim_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "cpt_codes",
+            "dataType": "string",
+            "sourceColumn": "cpt_codes",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "modifiers",
+            "dataType": "string",
+            "sourceColumn": "modifiers",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "billing-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"billing\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "floors",
+        "columns": [
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "floor_number",
+            "dataType": "int64",
+            "sourceColumn": "floor_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "department",
+            "dataType": "string",
+            "sourceColumn": "department",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_type",
+            "dataType": "string",
+            "sourceColumn": "bed_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "capacity",
+            "dataType": "int64",
+            "sourceColumn": "capacity",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "floors-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"floors\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "rooms",
+        "columns": [
+          {
+            "name": "room_id",
+            "dataType": "int64",
+            "sourceColumn": "room_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "floor_number",
+            "dataType": "int64",
+            "sourceColumn": "floor_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "room_number",
+            "dataType": "int64",
+            "sourceColumn": "room_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_count",
+            "dataType": "int64",
+            "sourceColumn": "bed_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "room_type",
+            "dataType": "string",
+            "sourceColumn": "room_type",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "rooms-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"rooms\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "beds",
+        "columns": [
+          {
+            "name": "bed_id",
+            "dataType": "int64",
+            "sourceColumn": "bed_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "room_id",
+            "dataType": "int64",
+            "sourceColumn": "room_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "floor_number",
+            "dataType": "int64",
+            "sourceColumn": "floor_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "room_number",
+            "dataType": "int64",
+            "sourceColumn": "room_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_position",
+            "dataType": "int64",
+            "sourceColumn": "bed_position",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_type",
+            "dataType": "string",
+            "sourceColumn": "bed_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status",
+            "dataType": "string",
+            "sourceColumn": "status",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "beds-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"beds\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "patient_bed_assignments",
+        "columns": [
+          {
+            "name": "assignment_id",
+            "dataType": "int64",
+            "sourceColumn": "assignment_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "admission_id",
+            "dataType": "int64",
+            "sourceColumn": "admission_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_id",
+            "dataType": "int64",
+            "sourceColumn": "bed_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "floor_number",
+            "dataType": "int64",
+            "sourceColumn": "floor_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "room_number",
+            "dataType": "int64",
+            "sourceColumn": "room_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_position",
+            "dataType": "int64",
+            "sourceColumn": "bed_position",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "assigned_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "assigned_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "discharged_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "discharged_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "patient_status",
+            "dataType": "string",
+            "sourceColumn": "patient_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "diagnosis_code",
+            "dataType": "string",
+            "sourceColumn": "diagnosis_code",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "los_days",
+            "dataType": "int64",
+            "sourceColumn": "los_days",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "patient_bed_assignments-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"patient_bed_assignments\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_building",
+        "columns": [
+          {
+            "name": "building_id",
+            "dataType": "int64",
+            "sourceColumn": "building_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "building_code",
+            "dataType": "string",
+            "sourceColumn": "building_code",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "building_name",
+            "dataType": "string",
+            "sourceColumn": "building_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "building_type",
+            "dataType": "string",
+            "sourceColumn": "building_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "campus_label",
+            "dataType": "string",
+            "sourceColumn": "campus_label",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "latitude",
+            "dataType": "decimal",
+            "sourceColumn": "latitude",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "longitude",
+            "dataType": "decimal",
+            "sourceColumn": "longitude",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "floor_count",
+            "dataType": "int64",
+            "sourceColumn": "floor_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "active_flag",
+            "dataType": "boolean",
+            "sourceColumn": "active_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "created_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "created_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_building-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_building\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_unit",
+        "columns": [
+          {
+            "name": "unit_id",
+            "dataType": "int64",
+            "sourceColumn": "unit_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "building_id",
+            "dataType": "int64",
+            "sourceColumn": "building_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "source_floor_number",
+            "dataType": "int64",
+            "sourceColumn": "source_floor_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "source_department",
+            "dataType": "string",
+            "sourceColumn": "source_department",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "department_id",
+            "dataType": "int64",
+            "sourceColumn": "department_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "unit_code",
+            "dataType": "string",
+            "sourceColumn": "unit_code",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "unit_name",
+            "dataType": "string",
+            "sourceColumn": "unit_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "unit_type",
+            "dataType": "string",
+            "sourceColumn": "unit_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "clinical_specialty",
+            "dataType": "string",
+            "sourceColumn": "clinical_specialty",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "licensed_bed_count",
+            "dataType": "int64",
+            "sourceColumn": "licensed_bed_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "staffed_bed_count",
+            "dataType": "int64",
+            "sourceColumn": "staffed_bed_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "nurse_ratio_target",
+            "dataType": "decimal",
+            "sourceColumn": "nurse_ratio_target",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "active_flag",
+            "dataType": "boolean",
+            "sourceColumn": "active_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "created_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "created_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_unit-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_unit\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_room_attribute",
+        "columns": [
+          {
+            "name": "room_id",
+            "dataType": "int64",
+            "sourceColumn": "room_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "unit_id",
+            "dataType": "int64",
+            "sourceColumn": "unit_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "room_name",
+            "dataType": "string",
+            "sourceColumn": "room_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "isolation_capable_flag",
+            "dataType": "boolean",
+            "sourceColumn": "isolation_capable_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "negative_pressure_flag",
+            "dataType": "boolean",
+            "sourceColumn": "negative_pressure_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "telemetry_capable_flag",
+            "dataType": "boolean",
+            "sourceColumn": "telemetry_capable_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "private_room_flag",
+            "dataType": "boolean",
+            "sourceColumn": "private_room_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "floor_x",
+            "dataType": "decimal",
+            "sourceColumn": "floor_x",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "floor_y",
+            "dataType": "decimal",
+            "sourceColumn": "floor_y",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "width",
+            "dataType": "decimal",
+            "sourceColumn": "width",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "height",
+            "dataType": "decimal",
+            "sourceColumn": "height",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "active_flag",
+            "dataType": "boolean",
+            "sourceColumn": "active_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "created_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "created_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_room_attribute-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_room_attribute\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_shift",
+        "columns": [
+          {
+            "name": "shift_id",
+            "dataType": "int64",
+            "sourceColumn": "shift_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "shift_code",
+            "dataType": "string",
+            "sourceColumn": "shift_code",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "shift_name",
+            "dataType": "string",
+            "sourceColumn": "shift_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "start_time",
+            "dataType": "string",
+            "sourceColumn": "start_time",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "end_time",
+            "dataType": "string",
+            "sourceColumn": "end_time",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "crosses_midnight_flag",
+            "dataType": "boolean",
+            "sourceColumn": "crosses_midnight_flag",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_shift-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_shift\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_staff",
+        "columns": [
+          {
+            "name": "staff_id",
+            "dataType": "int64",
+            "sourceColumn": "staff_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "existing_provider_id",
+            "dataType": "int64",
+            "sourceColumn": "existing_provider_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "synthetic_staff_number",
+            "dataType": "string",
+            "sourceColumn": "synthetic_staff_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "display_name",
+            "dataType": "string",
+            "sourceColumn": "display_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "role_code",
+            "dataType": "string",
+            "sourceColumn": "role_code",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "role_name",
+            "dataType": "string",
+            "sourceColumn": "role_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "credential",
+            "dataType": "string",
+            "sourceColumn": "credential",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "primary_hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "primary_hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "primary_unit_id",
+            "dataType": "int64",
+            "sourceColumn": "primary_unit_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "active_flag",
+            "dataType": "boolean",
+            "sourceColumn": "active_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "created_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "created_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_staff-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_staff\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_staff_assignment",
+        "columns": [
+          {
+            "name": "staff_assignment_id",
+            "dataType": "int64",
+            "sourceColumn": "staff_assignment_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "staff_id",
+            "dataType": "int64",
+            "sourceColumn": "staff_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "unit_id",
+            "dataType": "int64",
+            "sourceColumn": "unit_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "room_id",
+            "dataType": "int64",
+            "sourceColumn": "room_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_id",
+            "dataType": "int64",
+            "sourceColumn": "bed_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "shift_id",
+            "dataType": "int64",
+            "sourceColumn": "shift_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "assignment_start_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "assignment_start_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "assignment_end_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "assignment_end_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "assignment_role",
+            "dataType": "string",
+            "sourceColumn": "assignment_role",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_load",
+            "dataType": "int64",
+            "sourceColumn": "patient_load",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status",
+            "dataType": "string",
+            "sourceColumn": "status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "source_run_id",
+            "dataType": "int64",
+            "sourceColumn": "source_run_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "created_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "created_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_staff_assignment-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_staff_assignment\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_equipment",
+        "columns": [
+          {
+            "name": "equipment_id",
+            "dataType": "int64",
+            "sourceColumn": "equipment_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "building_id",
+            "dataType": "int64",
+            "sourceColumn": "building_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "floor_number",
+            "dataType": "int64",
+            "sourceColumn": "floor_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "unit_id",
+            "dataType": "int64",
+            "sourceColumn": "unit_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "room_id",
+            "dataType": "int64",
+            "sourceColumn": "room_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "equipment_type",
+            "dataType": "string",
+            "sourceColumn": "equipment_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "manufacturer",
+            "dataType": "string",
+            "sourceColumn": "manufacturer",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "model",
+            "dataType": "string",
+            "sourceColumn": "model",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "synthetic_serial_number",
+            "dataType": "string",
+            "sourceColumn": "synthetic_serial_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "criticality",
+            "dataType": "string",
+            "sourceColumn": "criticality",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "installation_date",
+            "dataType": "dateTime",
+            "sourceColumn": "installation_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "maintenance_interval_days",
+            "dataType": "int64",
+            "sourceColumn": "maintenance_interval_days",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "active_flag",
+            "dataType": "boolean",
+            "sourceColumn": "active_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "created_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "created_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_equipment-partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_equipment\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_equipment_state",
+        "columns": [
+          {
+            "name": "equipment_id",
+            "dataType": "int64",
+            "sourceColumn": "equipment_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "status",
+            "dataType": "string",
+            "sourceColumn": "status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "availability_status",
+            "dataType": "string",
+            "sourceColumn": "availability_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "utilization_status",
+            "dataType": "string",
+            "sourceColumn": "utilization_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "battery_pct",
+            "dataType": "decimal",
+            "sourceColumn": "battery_pct",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "temperature",
+            "dataType": "decimal",
+            "sourceColumn": "temperature",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "pressure",
+            "dataType": "decimal",
+            "sourceColumn": "pressure",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "error_code",
+            "dataType": "string",
+            "sourceColumn": "error_code",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "maintenance_due_date",
+            "dataType": "dateTime",
+            "sourceColumn": "maintenance_due_date",
+            "summarizeBy": "none",
+            "formatString": "Long Date"
+          },
+          {
+            "name": "last_seen_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "last_seen_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_equipment_state-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_equipment_state\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_equipment_event",
+        "columns": [
+          {
+            "name": "equipment_event_id",
+            "dataType": "int64",
+            "sourceColumn": "equipment_event_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "equipment_id",
+            "dataType": "int64",
+            "sourceColumn": "equipment_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "event_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "event_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "event_type",
+            "dataType": "string",
+            "sourceColumn": "event_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "severity",
+            "dataType": "string",
+            "sourceColumn": "severity",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "metric_name",
+            "dataType": "string",
+            "sourceColumn": "metric_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "metric_value",
+            "dataType": "decimal",
+            "sourceColumn": "metric_value",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "metric_unit",
+            "dataType": "string",
+            "sourceColumn": "metric_unit",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status_before",
+            "dataType": "string",
+            "sourceColumn": "status_before",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status_after",
+            "dataType": "string",
+            "sourceColumn": "status_after",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "description",
+            "dataType": "string",
+            "sourceColumn": "description",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_equipment_event-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_equipment_event\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_bed_state",
+        "columns": [
+          {
+            "name": "bed_id",
+            "dataType": "int64",
+            "sourceColumn": "bed_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "operational_status",
+            "dataType": "string",
+            "sourceColumn": "operational_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "occupancy_status",
+            "dataType": "string",
+            "sourceColumn": "occupancy_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "admission_id",
+            "dataType": "int64",
+            "sourceColumn": "admission_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "assigned_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "assigned_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "expected_release_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "expected_release_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "cleaning_required_flag",
+            "dataType": "boolean",
+            "sourceColumn": "cleaning_required_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_bed_state-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_bed_state\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_bed_state_event",
+        "columns": [
+          {
+            "name": "bed_state_event_id",
+            "dataType": "int64",
+            "sourceColumn": "bed_state_event_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "bed_id",
+            "dataType": "int64",
+            "sourceColumn": "bed_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "event_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "event_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "event_type",
+            "dataType": "string",
+            "sourceColumn": "event_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status_before",
+            "dataType": "string",
+            "sourceColumn": "status_before",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status_after",
+            "dataType": "string",
+            "sourceColumn": "status_after",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "reason",
+            "dataType": "string",
+            "sourceColumn": "reason",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_bed_state_event-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_bed_state_event\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_room_state",
+        "columns": [
+          {
+            "name": "room_id",
+            "dataType": "int64",
+            "sourceColumn": "room_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "operational_status",
+            "dataType": "string",
+            "sourceColumn": "operational_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "isolation_status",
+            "dataType": "string",
+            "sourceColumn": "isolation_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "cleaning_status",
+            "dataType": "string",
+            "sourceColumn": "cleaning_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "maintenance_status",
+            "dataType": "string",
+            "sourceColumn": "maintenance_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "current_patient_count",
+            "dataType": "int64",
+            "sourceColumn": "current_patient_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "available_bed_count",
+            "dataType": "int64",
+            "sourceColumn": "available_bed_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "last_cleaned_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "last_cleaned_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "next_expected_available_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "next_expected_available_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_room_state-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_room_state\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_staffing_state",
+        "columns": [
+          {
+            "name": "unit_id",
+            "dataType": "int64",
+            "sourceColumn": "unit_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "snapshot_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "snapshot_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "scheduled_rn_count",
+            "dataType": "int64",
+            "sourceColumn": "scheduled_rn_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "present_rn_count",
+            "dataType": "int64",
+            "sourceColumn": "present_rn_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "required_rn_count",
+            "dataType": "int64",
+            "sourceColumn": "required_rn_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "scheduled_pct_count",
+            "dataType": "int64",
+            "sourceColumn": "scheduled_pct_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "present_pct_count",
+            "dataType": "int64",
+            "sourceColumn": "present_pct_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "open_shift_count",
+            "dataType": "int64",
+            "sourceColumn": "open_shift_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "charge_nurse_staff_id",
+            "dataType": "int64",
+            "sourceColumn": "charge_nurse_staff_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "staffing_coverage_pct",
+            "dataType": "decimal",
+            "sourceColumn": "staffing_coverage_pct",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "staffing_status",
+            "dataType": "string",
+            "sourceColumn": "staffing_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_staffing_state-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_staffing_state\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_discharge_readiness",
+        "columns": [
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "expected_discharge_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "expected_discharge_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "readiness_status",
+            "dataType": "string",
+            "sourceColumn": "readiness_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "clinical_ready_flag",
+            "dataType": "boolean",
+            "sourceColumn": "clinical_ready_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "medication_ready_flag",
+            "dataType": "boolean",
+            "sourceColumn": "medication_ready_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "transport_ready_flag",
+            "dataType": "boolean",
+            "sourceColumn": "transport_ready_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "destination_ready_flag",
+            "dataType": "boolean",
+            "sourceColumn": "destination_ready_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "education_complete_flag",
+            "dataType": "boolean",
+            "sourceColumn": "education_complete_flag",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "outstanding_barrier_count",
+            "dataType": "int64",
+            "sourceColumn": "outstanding_barrier_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "primary_barrier",
+            "dataType": "string",
+            "sourceColumn": "primary_barrier",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_discharge_readiness-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_discharge_readiness\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_operational_alert",
+        "columns": [
+          {
+            "name": "alert_id",
+            "dataType": "int64",
+            "sourceColumn": "alert_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "alert_key",
+            "dataType": "string",
+            "sourceColumn": "alert_key",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "building_id",
+            "dataType": "int64",
+            "sourceColumn": "building_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "floor_number",
+            "dataType": "int64",
+            "sourceColumn": "floor_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "unit_id",
+            "dataType": "int64",
+            "sourceColumn": "unit_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "room_id",
+            "dataType": "int64",
+            "sourceColumn": "room_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "bed_id",
+            "dataType": "int64",
+            "sourceColumn": "bed_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "equipment_id",
+            "dataType": "int64",
+            "sourceColumn": "equipment_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "alert_category",
+            "dataType": "string",
+            "sourceColumn": "alert_category",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "alert_type",
+            "dataType": "string",
+            "sourceColumn": "alert_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "severity",
+            "dataType": "string",
+            "sourceColumn": "severity",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "title",
+            "dataType": "string",
+            "sourceColumn": "title",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "description",
+            "dataType": "string",
+            "sourceColumn": "description",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status",
+            "dataType": "string",
+            "sourceColumn": "status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "opened_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "opened_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "acknowledged_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "acknowledged_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "resolved_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "resolved_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "source_metric",
+            "dataType": "string",
+            "sourceColumn": "source_metric",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "source_value",
+            "dataType": "decimal",
+            "sourceColumn": "source_value",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "threshold_value",
+            "dataType": "decimal",
+            "sourceColumn": "threshold_value",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "created_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "created_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_operational_alert-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_operational_alert\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_alert_event",
+        "columns": [
+          {
+            "name": "alert_event_id",
+            "dataType": "int64",
+            "sourceColumn": "alert_event_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "alert_id",
+            "dataType": "int64",
+            "sourceColumn": "alert_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "event_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "event_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "event_type",
+            "dataType": "string",
+            "sourceColumn": "event_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status_before",
+            "dataType": "string",
+            "sourceColumn": "status_before",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status_after",
+            "dataType": "string",
+            "sourceColumn": "status_after",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "description",
+            "dataType": "string",
+            "sourceColumn": "description",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_alert_event-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_alert_event\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_patient_movement",
+        "columns": [
+          {
+            "name": "movement_id",
+            "dataType": "int64",
+            "sourceColumn": "movement_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "encounter_id",
+            "dataType": "int64",
+            "sourceColumn": "encounter_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "patient_id",
+            "dataType": "int64",
+            "sourceColumn": "patient_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "from_unit_id",
+            "dataType": "int64",
+            "sourceColumn": "from_unit_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "from_room_id",
+            "dataType": "int64",
+            "sourceColumn": "from_room_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "from_bed_id",
+            "dataType": "int64",
+            "sourceColumn": "from_bed_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "to_unit_id",
+            "dataType": "int64",
+            "sourceColumn": "to_unit_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "to_room_id",
+            "dataType": "int64",
+            "sourceColumn": "to_room_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "to_bed_id",
+            "dataType": "int64",
+            "sourceColumn": "to_bed_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "requested_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "requested_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "accepted_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "accepted_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "started_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "started_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "completed_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "completed_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "movement_type",
+            "dataType": "string",
+            "sourceColumn": "movement_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "movement_status",
+            "dataType": "string",
+            "sourceColumn": "movement_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "priority",
+            "dataType": "string",
+            "sourceColumn": "priority",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "delay_reason",
+            "dataType": "string",
+            "sourceColumn": "delay_reason",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_patient_movement-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_patient_movement\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_simulation_control",
+        "columns": [
+          {
+            "name": "control_id",
+            "dataType": "int64",
+            "sourceColumn": "control_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "simulator_name",
+            "dataType": "string",
+            "sourceColumn": "simulator_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "requested_state",
+            "dataType": "string",
+            "sourceColumn": "requested_state",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "update_interval_seconds",
+            "dataType": "int64",
+            "sourceColumn": "update_interval_seconds",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "speed_multiplier",
+            "dataType": "decimal",
+            "sourceColumn": "speed_multiplier",
+            "summarizeBy": "none",
+            "formatString": "0.00"
+          },
+          {
+            "name": "random_seed",
+            "dataType": "int64",
+            "sourceColumn": "random_seed",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "scenario_name",
+            "dataType": "string",
+            "sourceColumn": "scenario_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "selected_hospital_id",
+            "dataType": "int64",
+            "sourceColumn": "selected_hospital_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "last_updated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "last_updated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "updated_by",
+            "dataType": "string",
+            "sourceColumn": "updated_by",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_simulation_control-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_simulation_control\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_simulation_run",
+        "columns": [
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "simulator_name",
+            "dataType": "string",
+            "sourceColumn": "simulator_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "scenario_name",
+            "dataType": "string",
+            "sourceColumn": "scenario_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "random_seed",
+            "dataType": "int64",
+            "sourceColumn": "random_seed",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "started_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "started_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "ended_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "ended_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "current_status",
+            "dataType": "string",
+            "sourceColumn": "current_status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "iteration_count",
+            "dataType": "int64",
+            "sourceColumn": "iteration_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "last_successful_iteration_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "last_successful_iteration_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "error_count",
+            "dataType": "int64",
+            "sourceColumn": "error_count",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "hostname",
+            "dataType": "string",
+            "sourceColumn": "hostname",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "configuration_json",
+            "dataType": "string",
+            "sourceColumn": "configuration_json",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_simulation_run-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_simulation_run\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_simulation_checkpoint",
+        "columns": [
+          {
+            "name": "simulator_name",
+            "dataType": "string",
+            "sourceColumn": "simulator_name",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "last_completed_iteration",
+            "dataType": "int64",
+            "sourceColumn": "last_completed_iteration",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "simulated_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "simulated_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "random_state",
+            "dataType": "string",
+            "sourceColumn": "random_state",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "checkpoint_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "checkpoint_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "checkpoint_json",
+            "dataType": "string",
+            "sourceColumn": "checkpoint_json",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_simulation_checkpoint-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_simulation_checkpoint\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      },
+      {
+        "name": "ops_simulation_event_log",
+        "columns": [
+          {
+            "name": "simulation_event_log_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_event_log_id",
+            "summarizeBy": "none",
+            "isKey": true
+          },
+          {
+            "name": "simulation_run_id",
+            "dataType": "int64",
+            "sourceColumn": "simulation_run_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "iteration_number",
+            "dataType": "int64",
+            "sourceColumn": "iteration_number",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "event_datetime",
+            "dataType": "dateTime",
+            "sourceColumn": "event_datetime",
+            "summarizeBy": "none",
+            "formatString": "General Date"
+          },
+          {
+            "name": "event_category",
+            "dataType": "string",
+            "sourceColumn": "event_category",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "entity_type",
+            "dataType": "string",
+            "sourceColumn": "entity_type",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "entity_id",
+            "dataType": "string",
+            "sourceColumn": "entity_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "action",
+            "dataType": "string",
+            "sourceColumn": "action",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "status",
+            "dataType": "string",
+            "sourceColumn": "status",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "message",
+            "dataType": "string",
+            "sourceColumn": "message",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "diagnostic_json",
+            "dataType": "string",
+            "sourceColumn": "diagnostic_json",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ops_simulation_event_log-partition",
+            "mode": "directQuery",
+            "source": {
+              "type": "m",
+              "expression": "let\n    Source = Sql.Database(\"5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com\", \"Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616\"),\n    dbo_Table = Source{[Schema=\"dbo\",Item=\"ops_simulation_event_log\"]}[Data]\nin\n    dbo_Table"
+            }
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "rel-000",
+        "fromTable": "departments",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-001",
+        "fromTable": "hospital_department_beds",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-002",
+        "fromTable": "hospital_department_beds",
+        "fromColumn": "department_id",
+        "toTable": "departments",
+        "toColumn": "department_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-003",
+        "fromTable": "patients",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-004",
+        "fromTable": "doctors",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-005",
+        "fromTable": "encounters",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-006",
+        "fromTable": "encounters",
+        "fromColumn": "department_id",
+        "toTable": "departments",
+        "toColumn": "department_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-007",
+        "fromTable": "encounters",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-008",
+        "fromTable": "encounters",
+        "fromColumn": "provider_id",
+        "toTable": "doctors",
+        "toColumn": "provider_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-009",
+        "fromTable": "encounters",
+        "fromColumn": "encounter_date",
+        "toTable": "date_dim",
+        "toColumn": "date",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-010",
+        "fromTable": "admissions",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-011",
+        "fromTable": "admissions",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-012",
+        "fromTable": "admissions",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-013",
+        "fromTable": "admissions",
+        "fromColumn": "department_id",
+        "toTable": "departments",
+        "toColumn": "department_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-014",
+        "fromTable": "diagnoses",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-015",
+        "fromTable": "diagnoses",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-016",
+        "fromTable": "procedures",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-017",
+        "fromTable": "procedures",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-018",
+        "fromTable": "medications",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-019",
+        "fromTable": "medications",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-020",
+        "fromTable": "medications",
+        "fromColumn": "prescribing_provider_id",
+        "toTable": "doctors",
+        "toColumn": "provider_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-021",
+        "fromTable": "labs",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-022",
+        "fromTable": "labs",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-023",
+        "fromTable": "insurance",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-024",
+        "fromTable": "billing",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-025",
+        "fromTable": "billing",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-026",
+        "fromTable": "floors",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-027",
+        "fromTable": "rooms",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-028",
+        "fromTable": "beds",
+        "fromColumn": "room_id",
+        "toTable": "rooms",
+        "toColumn": "room_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-029",
+        "fromTable": "beds",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-030",
+        "fromTable": "patient_bed_assignments",
+        "fromColumn": "admission_id",
+        "toTable": "admissions",
+        "toColumn": "admission_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-031",
+        "fromTable": "patient_bed_assignments",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-032",
+        "fromTable": "patient_bed_assignments",
+        "fromColumn": "bed_id",
+        "toTable": "beds",
+        "toColumn": "bed_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-033",
+        "fromTable": "ops_building",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-034",
+        "fromTable": "ops_unit",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-035",
+        "fromTable": "ops_unit",
+        "fromColumn": "building_id",
+        "toTable": "ops_building",
+        "toColumn": "building_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-036",
+        "fromTable": "ops_unit",
+        "fromColumn": "department_id",
+        "toTable": "departments",
+        "toColumn": "department_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-037",
+        "fromTable": "ops_room_attribute",
+        "fromColumn": "room_id",
+        "toTable": "rooms",
+        "toColumn": "room_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-038",
+        "fromTable": "ops_room_attribute",
+        "fromColumn": "unit_id",
+        "toTable": "ops_unit",
+        "toColumn": "unit_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-039",
+        "fromTable": "ops_staff",
+        "fromColumn": "primary_hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-040",
+        "fromTable": "ops_staff",
+        "fromColumn": "primary_unit_id",
+        "toTable": "ops_unit",
+        "toColumn": "unit_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-041",
+        "fromTable": "ops_staff",
+        "fromColumn": "existing_provider_id",
+        "toTable": "doctors",
+        "toColumn": "provider_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-042",
+        "fromTable": "ops_staff_assignment",
+        "fromColumn": "staff_id",
+        "toTable": "ops_staff",
+        "toColumn": "staff_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-043",
+        "fromTable": "ops_staff_assignment",
+        "fromColumn": "unit_id",
+        "toTable": "ops_unit",
+        "toColumn": "unit_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-044",
+        "fromTable": "ops_staff_assignment",
+        "fromColumn": "shift_id",
+        "toTable": "ops_shift",
+        "toColumn": "shift_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-045",
+        "fromTable": "ops_staff_assignment",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-046",
+        "fromTable": "ops_staff_assignment",
+        "fromColumn": "bed_id",
+        "toTable": "beds",
+        "toColumn": "bed_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-047",
+        "fromTable": "ops_staff_assignment",
+        "fromColumn": "room_id",
+        "toTable": "rooms",
+        "toColumn": "room_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-048",
+        "fromTable": "ops_equipment",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-049",
+        "fromTable": "ops_equipment",
+        "fromColumn": "building_id",
+        "toTable": "ops_building",
+        "toColumn": "building_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-050",
+        "fromTable": "ops_equipment",
+        "fromColumn": "unit_id",
+        "toTable": "ops_unit",
+        "toColumn": "unit_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-051",
+        "fromTable": "ops_equipment",
+        "fromColumn": "room_id",
+        "toTable": "rooms",
+        "toColumn": "room_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-052",
+        "fromTable": "ops_equipment_state",
+        "fromColumn": "equipment_id",
+        "toTable": "ops_equipment",
+        "toColumn": "equipment_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-053",
+        "fromTable": "ops_equipment_event",
+        "fromColumn": "equipment_id",
+        "toTable": "ops_equipment",
+        "toColumn": "equipment_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-054",
+        "fromTable": "ops_bed_state",
+        "fromColumn": "bed_id",
+        "toTable": "beds",
+        "toColumn": "bed_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-055",
+        "fromTable": "ops_bed_state",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-056",
+        "fromTable": "ops_bed_state",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-057",
+        "fromTable": "ops_bed_state",
+        "fromColumn": "admission_id",
+        "toTable": "admissions",
+        "toColumn": "admission_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-058",
+        "fromTable": "ops_bed_state_event",
+        "fromColumn": "bed_id",
+        "toTable": "beds",
+        "toColumn": "bed_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-059",
+        "fromTable": "ops_room_state",
+        "fromColumn": "room_id",
+        "toTable": "rooms",
+        "toColumn": "room_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-060",
+        "fromTable": "ops_staffing_state",
+        "fromColumn": "unit_id",
+        "toTable": "ops_unit",
+        "toColumn": "unit_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-061",
+        "fromTable": "ops_staffing_state",
+        "fromColumn": "charge_nurse_staff_id",
+        "toTable": "ops_staff",
+        "toColumn": "staff_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-062",
+        "fromTable": "ops_discharge_readiness",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-063",
+        "fromTable": "ops_discharge_readiness",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-064",
+        "fromTable": "ops_operational_alert",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-065",
+        "fromTable": "ops_operational_alert",
+        "fromColumn": "unit_id",
+        "toTable": "ops_unit",
+        "toColumn": "unit_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-066",
+        "fromTable": "ops_operational_alert",
+        "fromColumn": "room_id",
+        "toTable": "rooms",
+        "toColumn": "room_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-067",
+        "fromTable": "ops_operational_alert",
+        "fromColumn": "bed_id",
+        "toTable": "beds",
+        "toColumn": "bed_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-068",
+        "fromTable": "ops_operational_alert",
+        "fromColumn": "equipment_id",
+        "toTable": "ops_equipment",
+        "toColumn": "equipment_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-069",
+        "fromTable": "ops_operational_alert",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-070",
+        "fromTable": "ops_alert_event",
+        "fromColumn": "alert_id",
+        "toTable": "ops_operational_alert",
+        "toColumn": "alert_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-071",
+        "fromTable": "ops_patient_movement",
+        "fromColumn": "encounter_id",
+        "toTable": "encounters",
+        "toColumn": "encounter_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-072",
+        "fromTable": "ops_patient_movement",
+        "fromColumn": "patient_id",
+        "toTable": "patients",
+        "toColumn": "patient_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-073",
+        "fromTable": "ops_patient_movement",
+        "fromColumn": "hospital_id",
+        "toTable": "hospitals",
+        "toColumn": "hospital_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-074",
+        "fromTable": "ops_patient_movement",
+        "fromColumn": "to_unit_id",
+        "toTable": "ops_unit",
+        "toColumn": "unit_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-075",
+        "fromTable": "ops_patient_movement",
+        "fromColumn": "from_unit_id",
+        "toTable": "ops_unit",
+        "toColumn": "unit_id",
+        "crossFilteringBehavior": "automatic",
+        "isActive": false
+      },
+      {
+        "name": "rel-076",
+        "fromTable": "ops_simulation_checkpoint",
+        "fromColumn": "simulation_run_id",
+        "toTable": "ops_simulation_run",
+        "toColumn": "simulation_run_id",
+        "crossFilteringBehavior": "automatic"
+      },
+      {
+        "name": "rel-077",
+        "fromTable": "ops_simulation_event_log",
+        "fromColumn": "simulation_run_id",
+        "toTable": "ops_simulation_run",
+        "toColumn": "simulation_run_id",
+        "crossFilteringBehavior": "automatic"
+      }
+    ],
+    "annotations": [
+      {
+        "name": "PBI_QueryOrder",
+        "value": "[\"date_dim\", \"hospitals\", \"departments\", \"hospital_department_beds\", \"patients\", \"doctors\", \"encounters\", \"admissions\", \"diagnoses\", \"procedures\", \"medications\", \"labs\", \"insurance\", \"billing\", \"floors\", \"rooms\", \"beds\", \"patient_bed_assignments\", \"ops_building\", \"ops_unit\", \"ops_room_attribute\", \"ops_shift\", \"ops_staff\", \"ops_staff_assignment\", \"ops_equipment\", \"ops_equipment_state\", \"ops_equipment_event\", \"ops_bed_state\", \"ops_bed_state_event\", \"ops_room_state\", \"ops_staffing_state\", \"ops_discharge_readiness\", \"ops_operational_alert\", \"ops_alert_event\", \"ops_patient_movement\", \"ops_simulation_control\", \"ops_simulation_run\", \"ops_simulation_checkpoint\", \"ops_simulation_event_log\"]"
+      },
+      {
+        "name": "__PBI_TimeIntelligenceEnabled",
+        "value": "0"
+      }
+    ]
+  }
+}
