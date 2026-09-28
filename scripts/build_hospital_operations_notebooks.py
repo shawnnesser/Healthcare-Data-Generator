@@ -70,6 +70,7 @@ for _pip_name, _import_name in [
 
 import os
 import json
+import math
 import random
 import socket
 import time
@@ -933,245 +934,25 @@ def simulate_room_cleaning_iteration(engine=None, run_id=None, rng=None):
     return changed
 """
 
-CELL_PATIENT_FLOW = r"""# ============================================================================
-# CELL: Patient-Flow Simulation
-# Never writes to clinical admissions/encounters -- "discharge" here only
-# releases the OPERATIONAL bed (ops_bed_state -> Cleaning -> Available).
-# ============================================================================
-_MIN_DWELL_HOURS = 2.0
+def build_patient_flow_cell() -> str:
+    """Inline the shared patient-flow module as a standalone notebook cell.
+
+    The module-relative imports are dropped (the notebook defines query/insert/
+    upsert/transaction helpers in earlier cells); the annotation-only names it
+    references are re-imported here so the cell resolves on its own.
+    """
+    source = (REPO_ROOT / "src" / "hospital_operations" / "patient_flow_simulator.py").read_text(encoding="utf-8")
+    body = source[source.index("_MIN_DWELL_HOURS ="):]
+    header = (
+        "from __future__ import annotations\n"
+        "from typing import Optional\n"
+        "from sqlalchemy import text\n"
+        "from sqlalchemy.engine import Engine\n"
+    )
+    return header + body
 
 
-def _pick_target_unit(units, hospital_id, encounter_type, rng):
-    hosp_units = units[units['hospital_id'] == hospital_id]
-    if hosp_units.empty:
-        return None
-    if encounter_type == 'Emergency':
-        preferred = hosp_units[hosp_units['unit_type'] == 'Emergency']
-        if not preferred.empty:
-            return preferred.sample(n=1, random_state=rng.randint(0, 2**31)).iloc[0]
-    non_critical = hosp_units[hosp_units['unit_type'] != 'Critical Care']
-    pool = non_critical if not non_critical.empty else hosp_units
-    return pool.sample(n=1, random_state=rng.randint(0, 2**31)).iloc[0]
-
-
-def _find_available_bed(engine, hospital_id, floor_number):
-    df = query_db(
-        "SELECT TOP 1 bs.bed_id FROM dbo.ops_bed_state bs JOIN dbo.beds b ON bs.bed_id = b.bed_id "
-        "WHERE b.hospital_id = :h AND b.floor_number = :f AND bs.occupancy_status = 'Available' ORDER BY bs.bed_id",
-        engine, {'h': hospital_id, 'f': floor_number})
-    return int(df.iloc[0]['bed_id']) if not df.empty else None
-
-
-def admit_patients(engine, simulated_now, run_id, batch_size, scenario, rng):
-    candidates = query_db(
-        "SELECT TOP (:lim) a.admission_id, a.encounter_id, a.patient_id, a.hospital_id, e.encounter_type "
-        "FROM dbo.admissions a JOIN dbo.encounters e ON a.encounter_id = e.encounter_id "
-        "WHERE a.discharge_datetime IS NULL "
-        "AND NOT EXISTS (SELECT 1 FROM dbo.ops_bed_state bs WHERE bs.admission_id = a.admission_id) "
-        "ORDER BY a.admit_datetime DESC", engine, {'lim': batch_size})
-    if candidates.empty:
-        return 0
-    units = query_db('SELECT unit_id, hospital_id, source_floor_number, unit_type FROM dbo.ops_unit', engine)
-    processed = 0
-    bed_event_id = get_next_id('ops_bed_state_event', 'bed_state_event_id', engine)
-    movement_id = get_next_id('ops_patient_movement', 'movement_id', engine)
-    with transaction(engine) as conn:
-        for _, cand in candidates.iterrows():
-            unit = _pick_target_unit(units, int(cand['hospital_id']), cand['encounter_type'], rng)
-            if unit is None:
-                continue
-            bed_id = _find_available_bed(conn, int(cand['hospital_id']), int(unit['source_floor_number']))
-            if bed_id is None:
-                continue
-            upsert_row(conn, 'ops_bed_state', ['bed_id'], {
-                'bed_id': bed_id, 'operational_status': 'Occupied', 'occupancy_status': 'Occupied',
-                'encounter_id': int(cand['encounter_id']), 'patient_id': int(cand['patient_id']),
-                'admission_id': int(cand['admission_id']), 'assigned_datetime': simulated_now,
-                'expected_release_datetime': None, 'cleaning_required_flag': False,
-                'updated_datetime': simulated_now, 'simulation_run_id': run_id,
-            })
-            insert_rows(conn, 'ops_bed_state_event', [{
-                'bed_state_event_id': bed_event_id, 'bed_id': bed_id, 'event_datetime': simulated_now,
-                'event_type': 'Admission', 'status_before': 'Available', 'status_after': 'Occupied',
-                'encounter_id': int(cand['encounter_id']), 'patient_id': int(cand['patient_id']),
-                'reason': 'Simulated admission bed assignment', 'simulation_run_id': run_id,
-            }])
-            insert_rows(conn, 'ops_patient_movement', [{
-                'movement_id': movement_id, 'encounter_id': int(cand['encounter_id']), 'patient_id': int(cand['patient_id']),
-                'hospital_id': int(cand['hospital_id']), 'from_unit_id': None, 'from_room_id': None, 'from_bed_id': None,
-                'to_unit_id': int(unit['unit_id']), 'to_room_id': None, 'to_bed_id': bed_id,
-                'requested_datetime': simulated_now, 'accepted_datetime': simulated_now, 'started_datetime': simulated_now,
-                'completed_datetime': simulated_now, 'movement_type': 'Admission', 'movement_status': 'Completed',
-                'priority': 'Routine', 'delay_reason': None, 'simulation_run_id': run_id,
-            }])
-            upsert_row(conn, 'ops_discharge_readiness', ['encounter_id'], {
-                'encounter_id': int(cand['encounter_id']), 'patient_id': int(cand['patient_id']),
-                'expected_discharge_datetime': None, 'readiness_status': 'Not Ready',
-                'clinical_ready_flag': False, 'medication_ready_flag': False, 'transport_ready_flag': False,
-                'destination_ready_flag': False, 'education_complete_flag': False, 'outstanding_barrier_count': 1,
-                'primary_barrier': 'Simulated: awaiting clinical progress', 'updated_datetime': simulated_now,
-                'simulation_run_id': run_id,
-            })
-            bed_event_id += 1
-            movement_id += 1
-            processed += 1
-    return processed
-
-
-def advance_discharge_readiness(engine, simulated_now, run_id, batch_size, discharge_delay_multiplier, rng):
-    occupied = query_db(
-        "SELECT TOP (:lim) dr.encounter_id, dr.outstanding_barrier_count FROM dbo.ops_discharge_readiness dr "
-        "WHERE dr.readiness_status <> 'Ready' ORDER BY dr.updated_datetime ASC", engine, {'lim': batch_size})
-    if occupied.empty:
-        return 0
-    progressed = 0
-    progress_chance = max(0.02, 0.20 / max(discharge_delay_multiplier, 0.1))
-    with transaction(engine) as conn:
-        for _, row in occupied.iterrows():
-            if rng.random() > progress_chance:
-                continue
-            barriers = max(0, int(row['outstanding_barrier_count']) - 1)
-            status = 'Ready' if barriers == 0 else ('Pending' if barriers <= 1 else 'Not Ready')
-            conn.execute(text(
-                "UPDATE dbo.ops_discharge_readiness SET outstanding_barrier_count = :b, readiness_status = :s, "
-                "clinical_ready_flag = CASE WHEN :b = 0 THEN 1 ELSE clinical_ready_flag END, "
-                "primary_barrier = CASE WHEN :b = 0 THEN NULL ELSE primary_barrier END, "
-                "expected_discharge_datetime = CASE WHEN :b = 0 THEN :now ELSE expected_discharge_datetime END, "
-                "updated_datetime = :now, simulation_run_id = :rid WHERE encounter_id = :eid"
-            ), {'b': barriers, 's': status, 'now': simulated_now, 'rid': run_id, 'eid': int(row['encounter_id'])})
-            progressed += 1
-    return progressed
-
-
-def discharge_ready_patients(engine, simulated_now, run_id, batch_size, rng):
-    ready = query_db(
-        "SELECT TOP (:lim) bs.bed_id, bs.encounter_id, bs.patient_id, b.hospital_id FROM dbo.ops_bed_state bs "
-        "JOIN dbo.beds b ON bs.bed_id = b.bed_id "
-        "JOIN dbo.ops_discharge_readiness dr ON bs.encounter_id = dr.encounter_id "
-        "WHERE bs.occupancy_status = 'Occupied' AND dr.readiness_status = 'Ready'", engine, {'lim': batch_size})
-    if ready.empty:
-        return 0
-    bed_event_id = get_next_id('ops_bed_state_event', 'bed_state_event_id', engine)
-    movement_id = get_next_id('ops_patient_movement', 'movement_id', engine)
-    released = 0
-    with transaction(engine) as conn:
-        for _, row in ready.iterrows():
-            bed_id = int(row['bed_id'])
-            upsert_row(conn, 'ops_bed_state', ['bed_id'], {
-                'bed_id': bed_id, 'operational_status': 'Cleaning', 'occupancy_status': 'Cleaning',
-                'encounter_id': None, 'patient_id': None, 'admission_id': None, 'assigned_datetime': None,
-                'expected_release_datetime': None, 'cleaning_required_flag': True,
-                'updated_datetime': simulated_now, 'simulation_run_id': run_id,
-            })
-            insert_rows(conn, 'ops_bed_state_event', [{
-                'bed_state_event_id': bed_event_id, 'bed_id': bed_id, 'event_datetime': simulated_now,
-                'event_type': 'Discharge', 'status_before': 'Occupied', 'status_after': 'Cleaning',
-                'encounter_id': int(row['encounter_id']), 'patient_id': int(row['patient_id']),
-                'reason': 'Simulated operational discharge (bed released for cleaning)', 'simulation_run_id': run_id,
-            }])
-            insert_rows(conn, 'ops_patient_movement', [{
-                'movement_id': movement_id, 'encounter_id': int(row['encounter_id']), 'patient_id': int(row['patient_id']),
-                'hospital_id': int(row['hospital_id']), 'from_unit_id': None, 'from_room_id': None, 'from_bed_id': bed_id,
-                'to_unit_id': None, 'to_room_id': None, 'to_bed_id': None, 'requested_datetime': simulated_now,
-                'accepted_datetime': simulated_now, 'started_datetime': simulated_now, 'completed_datetime': simulated_now,
-                'movement_type': 'Discharge', 'movement_status': 'Completed', 'priority': 'Routine',
-                'delay_reason': None, 'simulation_run_id': run_id,
-            }])
-            bed_event_id += 1
-            movement_id += 1
-            released += 1
-    return released
-
-
-def transfer_patients(engine, simulated_now, run_id, batch_size, icu_pressure_multiplier, rng):
-    if rng.random() > min(0.5, 0.05 * icu_pressure_multiplier):
-        return 0
-    occupied = query_db(
-        "SELECT TOP (:lim) bs.bed_id, bs.encounter_id, bs.patient_id, b.hospital_id, b.floor_number "
-        "FROM dbo.ops_bed_state bs JOIN dbo.beds b ON bs.bed_id = b.bed_id WHERE bs.occupancy_status = 'Occupied' "
-        "ORDER BY NEWID()", engine, {'lim': batch_size})
-    if occupied.empty:
-        return 0
-    units = query_db('SELECT unit_id, hospital_id, source_floor_number, unit_type FROM dbo.ops_unit', engine)
-    movement_id = get_next_id('ops_patient_movement', 'movement_id', engine)
-    bed_event_id = get_next_id('ops_bed_state_event', 'bed_state_event_id', engine)
-    moved = 0
-    with transaction(engine) as conn:
-        for _, row in occupied.iterrows():
-            hosp_units = units[(units['hospital_id'] == row['hospital_id']) & (units['source_floor_number'] != row['floor_number'])]
-            if hosp_units.empty:
-                continue
-            target_unit = hosp_units.sample(n=1, random_state=rng.randint(0, 2**31)).iloc[0]
-            new_bed_id = _find_available_bed(conn, int(row['hospital_id']), int(target_unit['source_floor_number']))
-            if new_bed_id is None:
-                continue
-            old_bed_id = int(row['bed_id'])
-            upsert_row(conn, 'ops_bed_state', ['bed_id'], {
-                'bed_id': new_bed_id, 'operational_status': 'Occupied', 'occupancy_status': 'Occupied',
-                'encounter_id': int(row['encounter_id']), 'patient_id': int(row['patient_id']), 'admission_id': None,
-                'assigned_datetime': simulated_now, 'expected_release_datetime': None, 'cleaning_required_flag': False,
-                'updated_datetime': simulated_now, 'simulation_run_id': run_id,
-            })
-            upsert_row(conn, 'ops_bed_state', ['bed_id'], {
-                'bed_id': old_bed_id, 'operational_status': 'Cleaning', 'occupancy_status': 'Cleaning',
-                'encounter_id': None, 'patient_id': None, 'admission_id': None, 'assigned_datetime': None,
-                'expected_release_datetime': None, 'cleaning_required_flag': True,
-                'updated_datetime': simulated_now, 'simulation_run_id': run_id,
-            })
-            insert_rows(conn, 'ops_bed_state_event', [{
-                'bed_state_event_id': bed_event_id, 'bed_id': old_bed_id, 'event_datetime': simulated_now,
-                'event_type': 'Internal Transfer', 'status_before': 'Occupied', 'status_after': 'Cleaning',
-                'encounter_id': int(row['encounter_id']), 'patient_id': int(row['patient_id']),
-                'reason': 'Simulated internal transfer', 'simulation_run_id': run_id,
-            }])
-            insert_rows(conn, 'ops_patient_movement', [{
-                'movement_id': movement_id, 'encounter_id': int(row['encounter_id']), 'patient_id': int(row['patient_id']),
-                'hospital_id': int(row['hospital_id']), 'from_unit_id': None, 'from_room_id': None, 'from_bed_id': old_bed_id,
-                'to_unit_id': int(target_unit['unit_id']), 'to_room_id': None, 'to_bed_id': new_bed_id,
-                'requested_datetime': simulated_now, 'accepted_datetime': simulated_now, 'started_datetime': simulated_now,
-                'completed_datetime': simulated_now,
-                'movement_type': 'Internal Transfer' if target_unit['unit_type'] != 'Critical Care' else 'ICU Transfer',
-                'movement_status': 'Completed', 'priority': 'Urgent' if target_unit['unit_type'] == 'Critical Care' else 'Routine',
-                'delay_reason': None, 'simulation_run_id': run_id,
-            }])
-            bed_event_id += 1
-            movement_id += 1
-            moved += 1
-    return moved
-
-
-def seed_discharge_readiness_for_occupied(engine=None, run_id=None):
-    '''Setup-only helper: seed ops_discharge_readiness for beds that started
-    Occupied (from existing patient_bed_assignments) and don't have one yet.'''
-    engine = engine or SINGLE_ENGINE
-    missing = query_db(
-        "SELECT bs.encounter_id, bs.patient_id FROM dbo.ops_bed_state bs "
-        "LEFT JOIN dbo.ops_discharge_readiness dr ON bs.encounter_id = dr.encounter_id "
-        "WHERE bs.occupancy_status = 'Occupied' AND bs.encounter_id IS NOT NULL AND dr.encounter_id IS NULL", engine)
-    if missing.empty:
-        return 0
-    now = pd.Timestamp.utcnow().tz_localize(None)
-    with transaction(engine) as conn:
-        for _, row in missing.iterrows():
-            upsert_row(conn, 'ops_discharge_readiness', ['encounter_id'], {
-                'encounter_id': int(row['encounter_id']), 'patient_id': int(row['patient_id']),
-                'expected_discharge_datetime': None, 'readiness_status': 'Not Ready',
-                'clinical_ready_flag': False, 'medication_ready_flag': False, 'transport_ready_flag': False,
-                'destination_ready_flag': False, 'education_complete_flag': False, 'outstanding_barrier_count': 1,
-                'primary_barrier': 'Simulated: awaiting clinical progress', 'updated_datetime': now,
-                'simulation_run_id': run_id,
-            })
-    return len(missing)
-
-
-def simulate_patient_flow_iteration(engine, simulated_now, run_id, scenario, batch_size, rng):
-    admitted = admit_patients(engine, simulated_now, run_id, max(1, batch_size // 3), scenario, rng)
-    progressed = advance_discharge_readiness(engine, simulated_now, run_id, batch_size, scenario.discharge_delay_multiplier, rng)
-    discharged = discharge_ready_patients(engine, simulated_now, run_id, max(1, batch_size // 3), rng)
-    transferred = transfer_patients(engine, simulated_now, run_id, max(1, batch_size // 4), scenario.icu_pressure_multiplier, rng)
-    return {'admitted': admitted, 'discharge_progressed': progressed, 'discharged': discharged, 'transferred': transferred}
-"""
-
+CELL_PATIENT_FLOW = build_patient_flow_cell()
 CELL_EQUIPMENT_SIMULATOR = r"""# ============================================================================
 # CELL: Per-Iteration Equipment State Transitions
 # ============================================================================
@@ -1520,7 +1301,12 @@ CELL_VALIDATION = r"""# ========================================================
 # ============================================================================
 
 def _rowcount_check(engine, name, sql, warn_only=False):
-    df = query_db(sql, engine)
+    # A query that cannot run is reported as a failure, never silently passed,
+    # but it must not abort the remaining checks in a notebook run.
+    try:
+        df = pd.read_sql(text(sql), engine)
+    except Exception as exc:
+        return {'check': name, 'status': 'FAIL', 'detail': f'check could not run: {exc}'}
     n = len(df)
     if n == 0:
         return {'check': name, 'status': 'PASS', 'detail': '0 violations'}
@@ -1582,6 +1368,43 @@ def run_all_checks(engine=None):
                   ISNULL((SELECT SUM(hdb.beds_allocated) FROM dbo.hospital_department_beds hdb
                           WHERE hdb.hospital_id = h.hospital_id AND hdb.date = (SELECT MAX(date) FROM dbo.hospital_department_beds)), 0)''',
             warn_only=True),
+        _rowcount_check(engine, 'Simulated episode has matching admission and patient', '''
+            SELECT se.encounter_id FROM dbo.ops_simulated_episode se
+            LEFT JOIN dbo.admissions a ON a.admission_id = se.admission_id
+            LEFT JOIN dbo.encounters e ON e.encounter_id = se.encounter_id
+            WHERE a.encounter_id IS NULL OR a.encounter_id <> se.encounter_id
+               OR a.patient_id <> se.patient_id OR e.patient_id <> se.patient_id'''),
+        _rowcount_check(engine, 'Simulated episode has matching diagnosis, lab and medication', '''
+            SELECT se.encounter_id FROM dbo.ops_simulated_episode se
+            WHERE NOT EXISTS (SELECT 1 FROM dbo.diagnoses d WHERE d.encounter_id = se.encounter_id
+                AND d.patient_id = se.patient_id AND d.onset_date >= CAST(se.created_datetime AS DATE))
+               OR NOT EXISTS (SELECT 1 FROM dbo.labs l WHERE l.encounter_id = se.encounter_id
+                AND l.patient_id = se.patient_id AND l.order_date >= CAST(se.created_datetime AS DATE)
+                AND l.reference_range <> 'Normal')
+               OR NOT EXISTS (SELECT 1 FROM dbo.medications m WHERE m.encounter_id = se.encounter_id
+                AND m.patient_id = se.patient_id AND m.start_date >= CAST(se.created_datetime AS DATE))'''),
+        _rowcount_check(engine, 'Simulated movement links and chronology are valid', '''
+            SELECT pm.movement_id FROM dbo.ops_patient_movement pm
+            JOIN dbo.ops_simulated_episode se ON se.encounter_id = pm.encounter_id
+            WHERE pm.patient_id <> se.patient_id
+               OR pm.completed_datetime IS NULL OR pm.requested_datetime > pm.completed_datetime
+               OR (pm.movement_type IN ('Internal Transfer', 'ICU Transfer')
+                   AND (pm.from_unit_id IS NULL OR pm.to_unit_id IS NULL))
+               OR (pm.movement_type = 'ICU Transfer' AND NOT EXISTS (
+                   SELECT 1 FROM dbo.ops_unit u WHERE u.unit_id = pm.to_unit_id
+                     AND u.unit_type = 'Critical Care'))'''),
+        _rowcount_check(engine, 'Simulated discharge agrees with clinical admission', '''
+            SELECT se.encounter_id FROM dbo.ops_simulated_episode se
+            JOIN dbo.admissions a ON a.admission_id = se.admission_id
+            WHERE EXISTS (SELECT 1 FROM dbo.ops_patient_movement pm
+                WHERE pm.encounter_id = se.encounter_id AND pm.movement_type = 'Discharge'
+                  AND pm.movement_status = 'Completed'
+                  AND (a.discharge_datetime IS NULL OR a.discharge_datetime < a.admit_datetime
+                       OR DATEDIFF(SECOND, a.discharge_datetime, pm.completed_datetime) <> 0))
+               OR (a.discharge_datetime IS NOT NULL AND NOT EXISTS (
+                   SELECT 1 FROM dbo.ops_patient_movement pm
+                   WHERE pm.encounter_id = se.encounter_id AND pm.movement_type = 'Discharge'
+                     AND pm.movement_status = 'Completed'))'''),
     ]
     return pd.DataFrame(checks)
 
@@ -1621,8 +1444,27 @@ def get_hospital_summary(engine=None, hospital_id=None):
 """
 
 
+def _make_cell_writers(cells):
+    """Return (md, code) appenders; `code` accepts optional Jupyter cell tags.
+
+    Tagging the config cell `parameters` lets Fabric (and papermill) inject an
+    override cell directly after it, so a headless job can bound the run
+    without editing the deployed notebook.
+    """
+    def md(src):
+        cells.append(nbf.v4.new_markdown_cell(src))
+
+    def code(src, tags=None):
+        cell = nbf.v4.new_code_cell(src)
+        if tags:
+            cell['metadata']['tags'] = list(tags)
+        cells.append(cell)
+
+    return md, code
+
+
 def add_shared_cells(md, code, simulator_name: str):
-    code(cell_config_and_environment(simulator_name))
+    code(cell_config_and_environment(simulator_name), tags=['parameters'])
     code(CELL_CONNECTION)
     code(CELL_MODELS)
     code(cell_schema_deployment())
@@ -1645,22 +1487,23 @@ def add_shared_cells(md, code, simulator_name: str):
 def build_setup_notebook():
     nb = nbf.v4.new_notebook()
     cells = []
-    md = lambda src: cells.append(nbf.v4.new_markdown_cell(src))
-    code = lambda src: cells.append(nbf.v4.new_code_cell(src))
+    md, code = _make_cell_writers(cells)
 
     md(r"""# Hospital Operations -- Setup (Microsoft Fabric)
 
 **SYNTHETIC DEMONSTRATION DATA ONLY.** This notebook builds a synthetic
 hospital-operations layer (buildings, units, staffing, equipment, initial
 bed/room state, alerts) on top of the existing Healthcare Data Generator's
-clinical tables. Nothing here is derived from, or suitable for, real clinical
-decision-making.
+clinical tables. The companion simulator adds synthetic clinical context for
+new operational stays. Nothing here is derived from, or suitable for, real
+clinical decision-making.
 
 ## What this notebook does
 This is a companion to the main `Healthcare_Data_Generator` notebook. It never
 duplicates clinical data (hospitals, patients, encounters, admissions,
-diagnoses, floors, rooms, beds) -- it only **extends** that data with a new,
-clearly-separated `ops_*` layer:
+floors, rooms, beds) -- it extends that data with an `ops_*` layer. Later
+simulation runs also update the linked encounter and admission and append a
+synthetic diagnosis, medication and lab for new operational stays:
 
 1. Configuration & environment
 2. Database connection
@@ -1990,8 +1833,7 @@ def run_loop(engine=None):
 def build_realtime_notebook():
     nb = nbf.v4.new_notebook()
     cells = []
-    md = lambda src: cells.append(nbf.v4.new_markdown_cell(src))
-    code = lambda src: cells.append(nbf.v4.new_code_cell(src))
+    md, code = _make_cell_writers(cells)
 
     md(r"""# Hospital Operations -- Real-Time Simulator (Microsoft Fabric)
 
@@ -2036,11 +1878,27 @@ probabilities/thresholds), not separate code paths.
     code(CELL_REALTIME_ENGINE)
 
     code(r"""# ============================================================================
-# CELL: Preflight -- confirm the operations schema exists before looping
+# CELL: Preflight -- confirm the operations schema exists and is up to date
+# The DDL embedded in this notebook is idempotent (IF NOT EXISTS), so applying
+# it here self-heals an older deployment that predates a newly added table
+# (e.g. ops_simulated_episode) without needing to re-run the Setup notebook.
 # ============================================================================
 existing_ops_tables = list_ops_tables(SINGLE_ENGINE)
 if not existing_ops_tables:
     raise RuntimeError('No ops_* tables found -- run Hospital_Operations_Setup.ipynb first.')
+
+print('Applying any additive schema upgrades (idempotent)...')
+deploy_schema(SINGLE_ENGINE, verbose=False)
+
+REQUIRED_OPS_TABLES = ['ops_bed_state', 'ops_patient_movement', 'ops_discharge_readiness', 'ops_simulated_episode']
+existing_ops_tables = list_ops_tables(SINGLE_ENGINE)
+still_missing = [t for t in REQUIRED_OPS_TABLES if t not in existing_ops_tables]
+if still_missing:
+    raise RuntimeError(
+        'Operations schema is incomplete after deployment -- missing: '
+        + ', '.join(still_missing)
+        + '. Re-run Hospital_Operations_Setup.ipynb.'
+    )
 print(f'\u2713 Found {len(existing_ops_tables)} ops_* tables. Ready to start the real-time loop.')
 print(f'Parameters: scenario={SCENARIO_NAME}, update_interval={UPDATE_INTERVAL_SECONDS}s, speed_multiplier={SPEED_MULTIPLIER}x, '
       f'max_iterations={MAX_ITERATIONS or "unlimited"}, max_runtime_minutes={MAX_RUNTIME_MINUTES or "unlimited"}')
@@ -2089,16 +1947,61 @@ re-run from the top, or call `reset_current_state(SINGLE_ENGINE)` directly.
     return nb
 
 
+def _check_notebook_is_self_contained(nb, label):
+    """Fail the build if a notebook references a name it never defines.
+
+    These notebooks inline module source but not the modules' own import
+    lines, so adding an import to src/ without adding it to the notebook's
+    import cell produces a NameError that only surfaces mid-run in Fabric
+    (e.g. "name 'math' is not defined" on simulation iteration 1).
+    """
+    import builtins
+
+    defined = set(dir(builtins)) | {'__name__', '__file__', '__doc__'}
+    used = []
+    for index, cell in enumerate((c for c in nb['cells'] if c['cell_type'] == 'code'), start=1):
+        tree = ast.parse(cell['source'])
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                defined.add(node.id)
+            elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                used.append((node.id, index, node.lineno))
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                defined.add(node.name)
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:
+                    defined.add(alias.asname or alias.name.split('.')[0])
+            elif isinstance(node, ast.arg):
+                defined.add(node.arg)
+            elif isinstance(node, ast.ExceptHandler) and node.name:
+                defined.add(node.name)
+            elif isinstance(node, (ast.Global, ast.Nonlocal)):
+                defined.update(node.names)
+
+    missing = sorted({(name, cell_no, line) for name, cell_no, line in used if name not in defined})
+    if missing:
+        detail = ', '.join(f'{name} (cell {cell_no}, line {line})' for name, cell_no, line in missing[:10])
+        raise SystemExit(
+            f'{label} is not self-contained -- undefined name(s): {detail}. '
+            f'Add the missing import to the notebook import cell.'
+        )
+    return len(used)
+
+
 if __name__ == '__main__':
+    import ast
+
     NOTEBOOKS_DIR.mkdir(parents=True, exist_ok=True)
 
     setup_nb = build_setup_notebook()
+    _check_notebook_is_self_contained(setup_nb, 'Hospital_Operations_Setup')
     setup_path = NOTEBOOKS_DIR / 'Hospital_Operations_Setup.ipynb'
     with open(setup_path, 'w', encoding='utf-8') as f:
         nbf.write(setup_nb, f)
     print(f'Wrote {setup_path}')
 
     realtime_nb = build_realtime_notebook()
+    _check_notebook_is_self_contained(realtime_nb, 'Hospital_Operations_Realtime_Simulator')
     realtime_path = NOTEBOOKS_DIR / 'Hospital_Operations_Realtime_Simulator.ipynb'
     with open(realtime_path, 'w', encoding='utf-8') as f:
         nbf.write(realtime_nb, f)

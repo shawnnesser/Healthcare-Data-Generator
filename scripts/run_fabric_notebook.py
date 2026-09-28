@@ -76,12 +76,20 @@ def find_notebook_id(token, workspace_id, notebook_name):
     return None
 
 
-def start_run(token, workspace_id, notebook_id):
+def start_run(token, workspace_id, notebook_id, parameters=None):
     url = f"{API_ROOT}/workspaces/{workspace_id}/items/{notebook_id}/jobs/instances?jobType=RunNotebook"
-    status, payload, location = api_request(url, token, method='POST', body={})
+    body = {}
+    if parameters:
+        # Fabric injects these after the cell tagged `parameters`, overriding the
+        # notebook's baked-in defaults for this run only.
+        body = {'executionData': {'parameters': parameters}}
+    status, payload, location = api_request(url, token, method='POST', body=body)
     if status == 202:
         job_instance_url = location or payload.get('id')
         print(f"Run started (HTTP 202 Accepted).")
+        if parameters:
+            for name, spec in parameters.items():
+                print(f"   parameter {name} = {spec.get('value')} ({spec.get('type')})")
         return job_instance_url
     print(f"Failed to start run (HTTP {status}): {payload}")
     return None
@@ -127,13 +135,50 @@ def poll_run(job_instance_url, poll_interval, timeout):
     return 'Timeout', None
 
 
+def parse_parameters(raw_list, json_blob):
+    """Build the Fabric `executionData.parameters` map.
+
+    Accepts repeated `--parameter NAME=VALUE:TYPE` (type optional, default
+    string) and/or a raw `--parameters-json` object passed through verbatim.
+    """
+    parameters = {}
+    if json_blob:
+        loaded = json.loads(json_blob)
+        if not isinstance(loaded, dict):
+            raise ValueError('--parameters-json must be a JSON object')
+        parameters.update(loaded)
+    for item in raw_list or []:
+        if '=' not in item:
+            raise ValueError(f"Invalid --parameter '{item}'; expected NAME=VALUE[:TYPE]")
+        name, value = item.split('=', 1)
+        ptype = 'string'
+        if ':' in value:
+            value, maybe_type = value.rsplit(':', 1)
+            if maybe_type in ('string', 'int', 'float', 'bool'):
+                ptype = maybe_type
+            else:
+                value = f'{value}:{maybe_type}'
+        parameters[name] = {'value': value, 'type': ptype}
+    return parameters
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--workspace-id', default=WORKSPACE_ID)
     parser.add_argument('--notebook-name', default=NOTEBOOK_NAME)
     parser.add_argument('--poll-interval', type=int, default=15, help='Seconds between status checks')
     parser.add_argument('--timeout', type=int, default=3600, help='Max seconds to wait for completion')
+    parser.add_argument('--parameter', action='append', metavar='NAME=VALUE[:TYPE]',
+                        help='Override a notebook parameter for this run (repeatable). '
+                             'Requires the notebook to have a cell tagged `parameters`.')
+    parser.add_argument('--parameters-json', help='Raw Fabric executionData.parameters JSON object')
     args = parser.parse_args()
+
+    try:
+        parameters = parse_parameters(args.parameter, args.parameters_json)
+    except ValueError as exc:
+        print(f"Invalid parameters: {exc}")
+        sys.exit(2)
 
     print("=" * 70)
     print("FABRIC NOTEBOOK - PROGRAMMATIC RUN")
@@ -153,7 +198,7 @@ def main():
     print(f"Notebook ID: {notebook_id}")
 
     print("\n[3/4] Starting on-demand run...")
-    job_instance_url = start_run(token, args.workspace_id, notebook_id)
+    job_instance_url = start_run(token, args.workspace_id, notebook_id, parameters)
     if not job_instance_url:
         sys.exit(1)
     print(f"Job instance: {job_instance_url}")

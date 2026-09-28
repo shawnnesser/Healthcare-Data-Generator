@@ -27,6 +27,7 @@ GO
 IF OBJECT_ID('dbo.ops_simulation_event_log', 'U') IS NOT NULL DROP TABLE dbo.ops_simulation_event_log;
 IF OBJECT_ID('dbo.ops_alert_event', 'U') IS NOT NULL DROP TABLE dbo.ops_alert_event;
 IF OBJECT_ID('dbo.ops_patient_movement', 'U') IS NOT NULL DROP TABLE dbo.ops_patient_movement;
+IF OBJECT_ID('dbo.ops_simulated_episode', 'U') IS NOT NULL DROP TABLE dbo.ops_simulated_episode;
 IF OBJECT_ID('dbo.ops_bed_state_event', 'U') IS NOT NULL DROP TABLE dbo.ops_bed_state_event;
 IF OBJECT_ID('dbo.ops_equipment_event', 'U') IS NOT NULL DROP TABLE dbo.ops_equipment_event;
 GO

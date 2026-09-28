@@ -75,6 +75,37 @@ BEGIN
 END
 GO
 
+IF OBJECT_ID('dbo.ops_simulated_episode', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ops_simulated_episode (
+        encounter_id       INT NOT NULL PRIMARY KEY,
+        admission_id       INT NOT NULL,
+        patient_id         INT NOT NULL,
+        simulation_run_id  INT NOT NULL,
+        created_datetime   DATETIME2 NOT NULL
+    );
+END
+GO
+
+-- Length-of-stay planning columns. Added separately and idempotently so an
+-- operations schema deployed before benchmark-driven length of stay upgrades
+-- in place, without re-running the full setup notebook.
+IF COL_LENGTH('dbo.ops_simulated_episode', 'icd_family') IS NULL
+    ALTER TABLE dbo.ops_simulated_episode ADD icd_family VARCHAR(40) NULL;
+GO
+IF COL_LENGTH('dbo.ops_simulated_episode', 'target_los_hours') IS NULL
+    ALTER TABLE dbo.ops_simulated_episode ADD target_los_hours DECIMAL(9, 2) NULL;
+GO
+IF COL_LENGTH('dbo.ops_simulated_episode', 'ed_dwell_hours') IS NULL
+    ALTER TABLE dbo.ops_simulated_episode ADD ed_dwell_hours DECIMAL(9, 2) NULL;
+GO
+IF COL_LENGTH('dbo.ops_simulated_episode', 'icu_expected_flag') IS NULL
+    ALTER TABLE dbo.ops_simulated_episode ADD icu_expected_flag BIT NULL;
+GO
+IF COL_LENGTH('dbo.ops_simulated_episode', 'expected_discharge_datetime') IS NULL
+    ALTER TABLE dbo.ops_simulated_episode ADD expected_discharge_datetime DATETIME2 NULL;
+GO
+
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ops_alert_event' AND schema_id = SCHEMA_ID('dbo'))
 BEGIN
     CREATE TABLE dbo.ops_alert_event (

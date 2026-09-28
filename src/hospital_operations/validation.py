@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import List
 
 import pandas as pd
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from .db import query_db
@@ -24,7 +25,12 @@ class CheckResult:
 
 
 def _rowcount_check(engine: Engine, name: str, sql: str, warn_only: bool = False) -> CheckResult:
-    df = query_db(sql, engine)
+    # A query that cannot run is reported as a failure, never silently passed,
+    # but it must not abort the remaining checks in a notebook run.
+    try:
+        df = pd.read_sql(text(sql), engine)
+    except Exception as exc:  # noqa: BLE001 - surfaced in the summary as a FAIL
+        return CheckResult(name, "FAIL", f"check could not run: {exc}")
     n = len(df)
     if n == 0:
         return CheckResult(name, "PASS", "0 violations")
@@ -104,12 +110,55 @@ def run_snapshot_reconciliation_checks(engine: Engine) -> List[CheckResult]:
     ]
 
 
+def run_episode_checks(engine: Engine) -> List[CheckResult]:
+    return [
+        _rowcount_check(engine, "Simulated episode has matching admission and patient", """
+            SELECT se.encounter_id FROM dbo.ops_simulated_episode se
+            LEFT JOIN dbo.admissions a ON a.admission_id = se.admission_id
+            LEFT JOIN dbo.encounters e ON e.encounter_id = se.encounter_id
+            WHERE a.encounter_id IS NULL OR a.encounter_id <> se.encounter_id
+               OR a.patient_id <> se.patient_id OR e.patient_id <> se.patient_id"""),
+        _rowcount_check(engine, "Simulated episode has matching diagnosis, lab and medication", """
+            SELECT se.encounter_id FROM dbo.ops_simulated_episode se
+            WHERE NOT EXISTS (SELECT 1 FROM dbo.diagnoses d WHERE d.encounter_id = se.encounter_id
+                AND d.patient_id = se.patient_id AND d.onset_date >= CAST(se.created_datetime AS DATE))
+               OR NOT EXISTS (SELECT 1 FROM dbo.labs l WHERE l.encounter_id = se.encounter_id
+                AND l.patient_id = se.patient_id AND l.order_date >= CAST(se.created_datetime AS DATE)
+                AND l.reference_range <> 'Normal')
+               OR NOT EXISTS (SELECT 1 FROM dbo.medications m WHERE m.encounter_id = se.encounter_id
+                AND m.patient_id = se.patient_id AND m.start_date >= CAST(se.created_datetime AS DATE))"""),
+        _rowcount_check(engine, "Simulated movement links and chronology are valid", """
+            SELECT pm.movement_id FROM dbo.ops_patient_movement pm
+            JOIN dbo.ops_simulated_episode se ON se.encounter_id = pm.encounter_id
+            WHERE pm.patient_id <> se.patient_id
+               OR pm.completed_datetime IS NULL OR pm.requested_datetime > pm.completed_datetime
+               OR (pm.movement_type IN ('Internal Transfer', 'ICU Transfer')
+                   AND (pm.from_unit_id IS NULL OR pm.to_unit_id IS NULL))
+               OR (pm.movement_type = 'ICU Transfer' AND NOT EXISTS (
+                   SELECT 1 FROM dbo.ops_unit u WHERE u.unit_id = pm.to_unit_id
+                     AND u.unit_type = 'Critical Care'))"""),
+        _rowcount_check(engine, "Simulated discharge agrees with clinical admission", """
+            SELECT se.encounter_id FROM dbo.ops_simulated_episode se
+            JOIN dbo.admissions a ON a.admission_id = se.admission_id
+            WHERE EXISTS (SELECT 1 FROM dbo.ops_patient_movement pm
+                WHERE pm.encounter_id = se.encounter_id AND pm.movement_type = 'Discharge'
+                  AND pm.movement_status = 'Completed'
+                  AND (a.discharge_datetime IS NULL OR a.discharge_datetime < a.admit_datetime
+                       OR DATEDIFF(SECOND, a.discharge_datetime, pm.completed_datetime) <> 0))
+               OR (a.discharge_datetime IS NOT NULL AND NOT EXISTS (
+                   SELECT 1 FROM dbo.ops_patient_movement pm
+                   WHERE pm.encounter_id = se.encounter_id AND pm.movement_type = 'Discharge'
+                     AND pm.movement_status = 'Completed'))"""),
+    ]
+
+
 def run_all_checks(engine: Engine) -> pd.DataFrame:
     results = (
         run_hierarchy_checks(engine)
         + run_bed_reconciliation_checks(engine)
         + run_staffing_equipment_alert_checks(engine)
         + run_snapshot_reconciliation_checks(engine)
+        + run_episode_checks(engine)
     )
     return pd.DataFrame([{"check": r.name, "status": r.status, "detail": r.detail} for r in results])
 

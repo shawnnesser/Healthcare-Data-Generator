@@ -101,7 +101,7 @@ known limitation with a documented evolution path.
 
 ## 4. Existing entities that will be reused (never duplicated)
 
-`hospitals`, `departments`, `patients`, `doctors` (as attending/ordering providers), `encounters`, `admissions`, `diagnoses`, `rooms`, `beds`. The new package treats all of these as **read-mostly upstream dependencies** — the only exception is that `ops_bed_state`/`ops_room_state` become the operational source of truth for "is this bed/room usable right now", read alongside (not instead of) `beds.status`.
+`hospitals`, `departments`, `patients`, `doctors` (as attending/ordering providers), `encounters`, `admissions`, `diagnoses`, `rooms`, `beds`. Most remain read-only dependencies. For stays marked in `ops_simulated_episode`, the simulator also updates the encounter complaint, appends a diagnosis, medication and lab, and records clinical discharge in `admissions`. It does not rewrite other historical encounters.
 
 ## 5. Missing operational entities (confirmed absent anywhere in the schema)
 
@@ -191,7 +191,7 @@ erDiagram
 
 | Class | Objects |
 |---|---|
-| **Existing source tables** (never modified) | `hospitals`, `departments`, `hospital_department_beds`, `patients`, `doctors`, `encounters`, `admissions`, `diagnoses`, `procedures`, `medications`, `labs`, `insurance`, `billing`, `date_dim`, `floors`, `rooms`, `beds`, `patient_bed_assignments`, `run_logs` |
+| **Existing source tables** (mostly read-only) | `hospitals`, `departments`, `hospital_department_beds`, `patients`, `doctors`, `encounters`, `admissions`, `diagnoses`, `procedures`, `medications`, `labs`, `insurance`, `billing`, `date_dim`, `floors`, `rooms`, `beds`, `patient_bed_assignments`, `run_logs`. Newly simulated episodes update `encounters` and `admissions` and append to `diagnoses`, `medications`, and `labs`. |
 | **New reference/hierarchy tables** (rarely change) | `ops_building`, `ops_unit`, `ops_room_attribute`, `ops_shift` |
 | **New current-state tables** (upserted) | `ops_staffing_state`, `ops_equipment_state`, `ops_room_state`, `ops_bed_state`, `ops_discharge_readiness`, `ops_operational_alert`, `ops_simulation_control`, `ops_simulation_checkpoint`, `ops_simulation_run` (status/counters updated in place per iteration) |
 | **New append-only historical/event tables** | `ops_equipment_event`, `ops_bed_state_event`, `ops_patient_movement`, `ops_alert_event`, `ops_simulation_event_log` |
