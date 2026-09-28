@@ -155,7 +155,8 @@ See [PATIENT_LOCATION_SYSTEM.md](PATIENT_LOCATION_SYSTEM.md) and [PATIENT_LOCATI
 
 #### 📚 Clinical & Payer Realism
 - 39 ICD-10 codes with full clinical descriptions and realistic chief complaints
-- Diagnoses linked to plausible labs/medications (sepsis, pneumonia, COPD, cellulitis, stroke, etc.)
+- Specialty- and weather-weighted diagnoses; encounter-level clinical coherence is a work item below
+- New patient first names are selected from the Faker name pool matching their generated `M`/`F` gender. Existing patient rows are not rewritten by catch-up runs.
 - Payer mix reflects US market share (Medicare ~36%, Commercial ~35%, Medicaid ~20%, Uninsured ~5%, Other ~4%), adjusted by age and hospital specialty
 - Procedure volumes weighted by specialty and seasonality (e.g. more cardiac catheterizations in cardiac hospitals, appendectomies trend up in summer)
 
@@ -172,13 +173,39 @@ See [PATIENT_LOCATION_SYSTEM.md](PATIENT_LOCATION_SYSTEM.md) and [PATIENT_LOCATI
 4. **Cell 4** — Computes the catch-up range: `MAX(encounter_date)` in `encounters` → today (empty DB → `DEFAULT_HISTORY_START_DATE`)
 5. **Cells 5–9** — Static reference data, hospital-specific helper functions, weather functions, core generators, floor/room/bed management
 6. **Cell 10** — Orchestrator: loops day-by-day over the catch-up range generating patients/doctors/encounters/diagnoses/procedures/medications/labs/insurance/billing/admissions with real, collision-free IDs, appending to each table
-7. **Cell 11** — Recomputes `patient_bed_assignments` and refreshes all views once after the full day-loop, then logs the run
+7. **Cell 11** — Refreshes the `icd_reference` dimension and repairs placeholder diagnosis descriptions (both run on every pass), recomputes `patient_bed_assignments`, refreshes all views once after the full day-loop, then logs the run
 8. **Cell 12** — Validation & final report (row counts, date range)
 
 **Catch-up is idempotent** — safe to run any time; it only ever generates the
 days between the last loaded date and today. An optional `MAX_CATCHUP_DAYS` env
 var caps how many days a single run will backfill (re-running continues where
 it left off).
+
+### Diagnosis families (`icd_reference`)
+
+`ICD_REFERENCE` in the notebook is the single source of truth mapping every ICD
+code the generator can emit to its description, **clinical family** and official
+**ICD-10-CM chapter**. It is written to the `icd_reference` table so diagnoses
+can be grouped for analysis:
+
+```sql
+SELECT r.clinical_family, COUNT(*) AS n
+FROM diagnoses d JOIN icd_reference r ON r.icd_code = d.icd_code
+GROUP BY r.clinical_family ORDER BY n DESC;
+```
+
+The chapter cannot be derived from the leading letter alone — neoplasms span
+C00–D49, blood/immune disorders resume at D50–D89, and injury spans S00–T88 —
+so the real ranges are stored rather than inferred. Clinical families
+deliberately match the condition families in
+[docs/LENGTH_OF_STAY_BENCHMARKS.md](docs/LENGTH_OF_STAY_BENCHMARKS.md) so
+length-of-stay modeling and analytics share one grouping.
+
+Generation now **fails loudly** if a sampled code is missing from
+`ICD_REFERENCE` instead of writing the literal string `Unknown diagnosis`,
+which previously affected 1,775,403 of 5,185,728 diagnosis rows (34%, spanning
+32 of 45 codes — including every oncology and rehab code). Cell 11 repairs
+those existing rows in place by joining to the dimension.
 
 ### Configuration (environment variables, all optional)
 
@@ -217,6 +244,219 @@ Run it after every generator run (manually, or chained in a Fabric pipeline/sche
 
 ---
 
+## Simulated patient journeys (Hospital Operations)
+
+Everything runs inside the two standalone Fabric notebooks — build them with
+`python scripts/build_hospital_operations_notebooks.py`, which inlines the
+`src/hospital_operations/*.py` logic and the `sql/hospital_operations/*.sql`
+DDL into self-contained cells (the notebooks import nothing from this repo).
+Run `Hospital_Operations_Setup` once after the clinical generator, then run
+`Hospital_Operations_Realtime_Simulator`. Both notebooks deploy the additive
+`ops_simulated_episode` table themselves: the DDL is idempotent, and the
+simulator's preflight cell re-applies it, so an ops schema deployed before this
+change upgrades in place without re-running Setup. Preflight fails loudly if a
+required table is still missing. These repository changes are not automatically
+deployed to Fabric or to the separate Rayfin application/poller.
+
+For eligible recent, open ODS admissions, the simulator reuses the admission,
+encounter, patient, hospital and provider identifiers. It assigns an available
+bed (an Emergency unit for Emergency encounters), records an admission movement,
+and atomically marks the stay in `ops_simulated_episode`. It updates the
+encounter complaint and adds one matching synthetic diagnosis, medication and
+lab result. Subsequent ticks can transfer the patient between units, including
+Emergency to Critical Care when both units and an ICU bed are available;
+transfers preserve the admission ID and record both source and destination.
+After a simulated dwell/readiness period, discharge releases the bed and sets
+`admissions.discharge_datetime` **only for marked stays**. These are demo
+events, not clinical recommendations or a complete Epic data model. Transfer
+is probabilistic: not every ED arrival goes to ICU.
+
+Because a populated ODS carries a large backlog of older legacy occupancy whose
+timestamps always predate new episodes, purely oldest-first selection starved
+simulated stays: they were admitted but never became discharge-ready, never
+transferred and never discharged. Each readiness, transfer and discharge batch
+therefore reserves half its slots (at least one) for simulated episodes and
+gives the remainder to legacy rows, so new journeys progress while ambient
+legacy movement continues.
+
+### Length of stay is driven by the diagnosis, not by the clock
+
+At admission each simulated stay draws its own length of stay from the
+published benchmarks for its `icd_reference` clinical family, and that plan is
+persisted so it can be queried and audited:
+
+| Column on `ops_simulated_episode` | Meaning |
+|---|---|
+| `icd_family` | Clinical family of the stay's diagnosis (joins `icd_reference`) |
+| `target_los_hours` | Length of stay drawn for this patient |
+| `ed_dwell_hours` | Drawn ED dwell for an admitted patient |
+| `icu_expected_flag` | Whether this stay is expected to need critical care |
+| `expected_discharge_datetime` | `admit + target_los_hours`, also written to `ops_bed_state.expected_release_datetime` |
+
+Three behaviours follow from that plan:
+
+- **Stay length reflects the condition.** Draws come from a right-skewed
+  lognormal fitted to each family's published mean *and* median, so a
+  rehabilitation stay runs long and an ENT stay runs short, with a realistic
+  long tail (capped at 6× the family mean).
+- **Stay length no longer depends on `SPEED_MULTIPLIER`.** Discharge barriers
+  previously cleared on a per-iteration probability, which made length of stay
+  a function of how fast the simulation ran. Barriers now clear only once the
+  simulated clock passes `expected_release_datetime`. Scenario pressure is
+  applied to the drawn stay (via `discharge_delay_multiplier`) rather than to a
+  per-tick chance. Legacy rows, which carry no drawn plan, keep the original
+  probabilistic walk so ambient movement continues.
+- **ED to ICU is no longer automatic.** Every ED patient selected for transfer
+  used to be forced into Critical Care. Only the share flagged at admit
+  escalates; the rest move to a general bed. Per-family ICU rates are published
+  *within-condition* cohort rates (≈70% of AMI admissions reach a CCU), so they
+  are rescaled by a single factor that preserves the ordering between
+  conditions while landing the blended rate on the published ≈18% of
+  admissions. Transfers carry `expected_release_datetime` with the patient, so
+  moving units never discards the stay plan.
+
+See [docs/LENGTH_OF_STAY_BENCHMARKS.md](docs/LENGTH_OF_STAY_BENCHMARKS.md) for
+the sourced ED dwell, inpatient length-of-stay, ICU and ED-to-ICU figures, each
+graded for confidence, plus the gaps that remain modeling assumptions.
+
+Because these notebooks inline `src/hospital_operations/*.py` without the
+modules' own import lines, the builder fails the build if a generated notebook
+references a name it never defines — an import added to `src/` but not to the
+notebook import cell would otherwise only surface as a mid-run `NameError` in
+Fabric.
+
+```sql
+-- Length of stay by clinical family, as actually simulated
+SELECT se.icd_family,
+       COUNT(*)                                        AS stays,
+       CAST(AVG(se.target_los_hours) / 24 AS DECIMAL(6,2)) AS mean_los_days,
+       CAST(AVG(se.ed_dwell_hours)       AS DECIMAL(6,2))  AS mean_ed_dwell_hours,
+       SUM(CAST(se.icu_expected_flag AS INT))          AS icu_expected
+FROM dbo.ops_simulated_episode se
+WHERE se.icd_family IS NOT NULL
+GROUP BY se.icd_family
+ORDER BY stays DESC;
+```
+
+The small specialty-based clinical catalog is illustrative; pre-existing
+diagnoses, labs and medications on selected encounters are not repaired or
+removed. Historical stays and legacy operations-only discharges are unchanged.
+The operations setup and simulator validation report new-episode linkage,
+movement chronology and clinical discharge consistency; full historical ODS
+quality remains in the backlog below.
+
+To inspect one patient's journey after running the simulator, use this query
+in Healthcare ODS (replace the encounter ID with one from
+`ops_simulated_episode`):
+
+```sql
+SELECT se.encounter_id, se.patient_id, a.admit_datetime,
+       pm.movement_type, pm.from_unit_id, pm.to_unit_id,
+       pm.from_bed_id, pm.to_bed_id, pm.completed_datetime,
+       a.discharge_datetime
+FROM dbo.ops_simulated_episode se
+JOIN dbo.admissions a ON a.admission_id = se.admission_id
+LEFT JOIN dbo.ops_patient_movement pm ON pm.encounter_id = se.encounter_id
+WHERE se.encounter_id = 12345
+ORDER BY pm.completed_datetime, pm.movement_id;
+```
+
+Join the returned `encounter_id` and `patient_id` to `diagnoses`,
+`medications` and `labs` to inspect the associated synthetic clinical story.
+
+Run `run_all_checks(SINGLE_ENGINE)` in either notebook for the PASS/WARN/FAIL
+summary, which now includes the simulated-episode checks. A check whose query
+cannot run is reported as FAIL with the error text rather than passing silently
+or aborting the rest of the summary.
+
+Local regression tests for this flow logic (no database required):
+
+```bash
+python -m unittest discover -s tests
+```
+
+## ODS Demo-Realism Backlog
+
+**Scope:** This repository owns the synthetic Healthcare ODS database, its Fabric
+generator, and data-quality validation. Aim for a coherent, semi-realistic
+patient/encounter story suitable for Epic-like workflow demos, not a production
+EHR or a claim of Epic schema compatibility. Rayfin app UI, its separate
+snapshots, and its runtime are outside this backlog.
+
+The figures below are read-only observations from Healthcare ODS on
+2026-09-25; 10,000-row figures are samples of the most recent IDs, **not**
+whole-table counts. Treat them as baselines to remeasure, not fixed targets
+after the next catch-up.
+
+- [ ] **P0 - Keep patient, encounter, and clinical records consistent.**
+  Generate each diagnosis with its encounter's `patient_id`; generate each
+  billing row from a single selected encounter so its patient matches. Apply
+  the same invariant to labs, medications, and procedures where patient IDs
+  exist. Baseline: 9,786/10,000 sampled diagnoses and 35,318/36,000 billing
+  rows disagree with their encounters. Add checks requiring **zero**
+  patient/encounter mismatches (and zero orphan references) in new data.
+- [ ] **P0 - Make an encounter a coherent clinical episode.** Choose a
+  condition for the encounter and derive its chief complaint, diagnosis
+  description, appropriate orders/results, and medications together. Replace
+  unknown descriptions for mapped ICD codes; use test-specific lab units,
+  values, and actual reference ranges, with separate abnormal flags when
+  available. Baseline: 3,483/10,000 sampled diagnoses say "Unknown diagnosis"
+  and all 110,775 labs have `reference_range = 'Normal'`. Validate code-to-
+  description coverage and test-to-unit/range compatibility, not just counts.
+  **Partially addressed:** the `icd_reference` dimension now supplies a real
+  description for every emitted code, generation fails loudly instead of
+  writing `Unknown diagnosis`, and Cell 11 repairs existing rows. Lab units and
+  reference ranges remain outstanding.
+- [ ] **P1 - Enforce believable encounter timing and hospital routing.**
+  Generate ordered start/end timestamps (accounting for overnight visits),
+  choose pediatric patients for children's-hospital encounters, and keep
+  Emergency encounters out of hospitals documented as having no ED. Align
+  admission times and department assignments with the selected encounter and
+  the hospital's actual services. Baseline, latest 10,000 encounters: 4,985
+  have `start_time > end_time` (date-free times require clarification before
+  classifying overnight stays), 856 children's-hospital encounters involve
+  adults, and 29 diagnostic, 163 cardiac, and 50 cancer encounters are marked
+  Emergency. Specify valid transfer/exception pathways rather than silently
+  deleting legitimate exceptions. Validate the resulting rules on new data.
+- [ ] **P1 - Make insurance and claim arithmetic consistent.** Assign
+  `expiration_date >= effective_date`; derive `balance` from charges and
+  payment, and constrain payment to a coherent amount. Keep a claim's
+  `patient_id` and encounter aligned (P0 above). Baseline: 14,570/31,650
+  policies expire before they begin, 17,801/36,000 claims are overpaid, and
+  all 36,000 balances differ from `total_charges - paid_amount`. Validate
+  these equations with currency-appropriate tolerance.
+- [ ] **P0 - Extend both ODS validation paths before declaring success.**
+  Add the above checks to the source of the Fabric validation notebook
+  (`scripts/build_validation_notebook.py`) and the local validator
+  (`scripts/validate_fabric_data.py`). Report tested row counts and failure
+  counts, fail on violated invariants, and avoid treating skipped or failed
+  queries as passing. Exercise them against a small generated cohort and a
+  read-only audit of the existing ODS.
+- [ ] **P1 - Plan a targeted historical-data repair after prospective fixes.**
+  The generator appends days after `MAX(encounter_date)` and will not correct
+  older rows. Inventory affected ODS rows by table and date, preserve linked
+  identifiers and clinical timelines, back up affected data, rehearse a
+  bounded/idempotent migration, then re-run the same validation checks.
+  Do not reset all ODS data or rewrite clinical events merely to make a
+  dashboard pass. The separate name/gender first-name repair was completed on
+  2026-09-25; these clinical and financial issues remain open.
+- [ ] **P0 - Validate simulator-driven longitudinal stays end to end.**
+  For newly simulated stays, verify the same encounter and patient across
+  admission, ED/ward/ICU movement, bed occupancy, diagnosis, medication, lab,
+  and clinical discharge. Require ordered movement timestamps, a resolvable
+  source and destination unit for transfers, and no simultaneously occupied
+  beds for the same encounter. Do not infer an ED-to-ICU transfer from an
+  admission and an ICU event alone. Add these checks to the ODS validation
+  paths before relying on the journey for demos.
+  **Partially addressed:** simulated stays now carry a benchmark-derived length
+  of stay, ED dwell and ICU expectation on `ops_simulated_episode`, discharge
+  is gated on the planned release rather than on iteration count, and ED-to-ICU
+  escalation is limited to the flagged share. A live bounded run showed zero
+  broken episode linkage and zero stays discharged before their planned date.
+  These checks still need to be added to the two validation paths.
+
+---
+
 ## Deploying & Scheduling
 
 1. Make sure you're authenticated: `az login` (needs access to the target Fabric workspace)
@@ -242,11 +482,18 @@ Run it after every generator run (manually, or chained in a Fabric pipeline/sche
 | `admissions` | Admission records | admission_id, encounter_id, hospital_id, patient_id, admit_datetime, discharge_datetime |
 | `procedures` | Surgical/clinical procedures | procedure_id, hospital_id, encounter_id, procedure_name, procedure_date |
 | `diagnoses` | ICD codes linked to encounters | diagnosis_id, encounter_id, icd_code, description |
+| `icd_reference` | ICD-10 code dimension — description, clinical family, chapter | icd_code, description, clinical_family, icd_chapter, chapter_code_range |
 | `medications` | Prescriptions | medication_id, encounter_id, medication_name, dosage |
 | `labs` | Lab results | lab_id, encounter_id, lab_name, result, normal_range |
 | `insurance` | Insurance master data | insurance_id, patient_id, company_name, plan_name, copay |
 | `billing` | Charges & billing records | billing_id, encounter_id, patient_id, total_charges, paid_amount, balance, claim_status |
-| `run_logs` | Audit trail of generator runs | run_timestamp, start_date, end_date, days_generated |
+| `run_logs` | Audit trail of generator runs | run_timestamp, frequency, start_date, end_date, days_generated, encounters_generated, admissions_generated |
+
+`run_logs` predates the day-range catch-up model, so databases created against
+an earlier version carry only the per-entity count columns. The generator adds
+the day-range columns idempotently before writing, so logging self-heals in
+place on the next run that actually generates data — previously the mismatch
+failed silently into an exception handler and no run was recorded.
 
 **Patient Location & Floor Management Tables:**
 
@@ -293,6 +540,31 @@ LEFT JOIN admissions a ON h.hospital_id = a.hospital_id
     AND (a.discharge_datetime IS NULL OR a.discharge_datetime > GETDATE())
 GROUP BY h.hospital_id, h.hospital_name, h.bed_count
 ORDER BY occupancy_pct DESC;
+
+-- Diagnosis volume by clinical family (the icd_reference dimension)
+SELECT r.clinical_family, COUNT(*) AS diagnosis_count,
+       COUNT(DISTINCT d.icd_code) AS distinct_codes,
+       COUNT(DISTINCT d.patient_id) AS patients
+FROM diagnoses d
+JOIN icd_reference r ON r.icd_code = d.icd_code
+GROUP BY r.clinical_family
+ORDER BY diagnosis_count DESC;
+
+-- Drill from ICD-10 chapter into the codes inside it
+SELECT r.icd_chapter, r.chapter_code_range, d.icd_code, r.description, COUNT(*) AS n
+FROM diagnoses d
+JOIN icd_reference r ON r.icd_code = d.icd_code
+GROUP BY r.icd_chapter, r.chapter_code_range, d.icd_code, r.description
+ORDER BY r.icd_chapter, n DESC;
+
+-- Seasonality of a clinical family (respiratory should peak in winter)
+SELECT dd.yyyy, dd.mm, COUNT(*) AS respiratory_diagnoses
+FROM diagnoses d
+JOIN icd_reference r ON r.icd_code = d.icd_code
+JOIN date_dim dd ON dd.date = CAST(d.onset_date AS DATE)
+WHERE r.clinical_family = 'Respiratory'
+GROUP BY dd.yyyy, dd.mm
+ORDER BY dd.yyyy, dd.mm;
 ```
 
 More examples (referential-integrity/data-quality queries) are in
