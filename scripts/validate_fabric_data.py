@@ -4,7 +4,13 @@ scripts/_verify_data.py) so it never hangs waiting for a browser login.
 """
 import struct
 import subprocess
+import sys
+from pathlib import Path
+
 import pyodbc
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ods_quality_checks import format_table, run_quality_checks, run_quality_summaries  # noqa: E402
 
 SERVER = "5mx5ymqwo74ezmng6awpg76wx4-f2smxdwfuzzenbkp2vylj5c5ca.database.fabric.microsoft.com"
 DATABASE = "Healthcare ODS-63ba7f40-a784-49f0-ae76-387233bc2616"
@@ -186,12 +192,31 @@ def main():
     except Exception as e:
         print(f"  deep-dive failed: {e}")
 
+    section("10. DIAGNOSIS FAMILIES & SIMULATED STAYS")
+    existing = set(table_counts)
+
+    def fetch_rows(sql):
+        return q(cur, sql)[1]
+
+    results = run_quality_checks(fetch_rows, existing)
+    for name, status, detail in results:
+        marker = {"PASS": "OK", "FAIL": "** FAIL **", "SKIP": "SKIPPED"}[status]
+        print(f"  {name:70s} {marker}  {detail}")
+    for name, columns, rows in run_quality_summaries(lambda sql: q(cur, sql), existing):
+        print(f"\n  {name}")
+        print(f"    ({rows})" if columns is None else format_table(columns, rows))
+    failed = [r for r in results if r[1] == "FAIL"]
+    skipped = [r for r in results if r[1] == "SKIP"]
+
     section("SUMMARY")
     print(f"  Total tables: {len(table_counts)}")
     print(f"  Encounters date coverage: {min_d} -> {max_d} ({days_with_data}/{calendar_days} calendar days, {missing} missing)")
+    print(f"  Diagnosis-family / simulated-stay checks: "
+          f"{len(results) - len(failed) - len(skipped)} passed, {len(failed)} failed, {len(skipped)} skipped")
 
     conn.close()
+    return 1 if failed else 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

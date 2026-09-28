@@ -2282,13 +2282,15 @@ else:
             repaired = conn.execute(text(
                 'UPDATE d SET description = r.description '
                 'FROM dbo.diagnoses d JOIN dbo.icd_reference r ON r.icd_code = d.icd_code '
-                "WHERE d.description IS NULL OR d.description = '' "
-                "OR d.description = 'Unknown diagnosis'"
+                # icd_reference is the authority for code titles, so this also
+                # corrects rows written by other producers (e.g. the ops
+                # simulator) whose wording drifted from the reference.
+                'WHERE d.description IS NULL OR d.description <> r.description'
             )).rowcount
         if repaired:
-            print(f'  \u2713 Repaired {repaired:,} diagnosis rows that had no usable description')
+            print(f'  \u2713 Repaired {repaired:,} diagnosis rows whose description was missing or disagreed with icd_reference')
         else:
-            print('  \u2713 No placeholder diagnosis descriptions remain')
+            print('  \u2713 Every diagnosis description matches icd_reference')
         orphans = query_db(
             'SELECT COUNT(*) AS n FROM dbo.diagnoses d '
             'LEFT JOIN dbo.icd_reference r ON r.icd_code = d.icd_code WHERE r.icd_code IS NULL'

@@ -123,7 +123,7 @@ _CLINICAL_STORIES = {
     "pediatric": ("J45.901", "Unspecified asthma with (acute) exacerbation", "Wheezing", "Albuterol", "2.5 mg", "As needed", "Arterial oxygen partial pressure", "68", "mmHg", "80-100", "Respiratory"),
     "cardiac": ("I50.9", "Heart failure, unspecified", "Shortness of breath", "Furosemide", "40 mg", "Once daily", "BNP", "350", "pg/mL", "0-100", "Cardiology"),
     "cancer": ("D70.9", "Neutropenia, unspecified", "Fever", "Cefepime", "2 g", "Twice daily", "White blood cell count", "1.2", "10^3/uL", "4.0-11.0", "Hematology"),
-    "rehab": ("M62.81", "Muscle weakness, generalized", "Weakness", "Acetaminophen", "500 mg", "As needed", "Creatinine", "1.0", "mg/dL", "0.6-1.3", "Musculoskeletal"),
+    "rehab": ("M62.81", "Muscle weakness (generalized)", "Weakness", "Acetaminophen", "500 mg", "As needed", "Creatinine", "1.0", "mg/dL", "0.6-1.3", "Musculoskeletal"),
 }
 
 

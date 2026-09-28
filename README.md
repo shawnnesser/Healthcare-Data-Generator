@@ -239,6 +239,21 @@ a notebook locally outside Fabric.
 6. NULL checks on key columns
 7. Reference data presence (hospitals/departments/date_dim)
 8. View queryability (`vw_current_er_beds`, `vw_current_patient_beds`, `vw_floor_plan`, `vw_patient_location`, `vw_floor_occupancy`, `vw_hospital_status`)
+9. Diagnosis-family and simulated-stay quality checks: every diagnosis code
+   resolves in `icd_reference`, its description matches the reference, and
+   planned simulated stays have a complete LOS plan, a family matching one of
+   their diagnoses, no discharge before the planned release, a bed that
+   carries the plan across transfers, and ICU transfers only when the stay is
+   ICU-flagged. It also prints LOS/ICU-share summaries by family (for
+   information only; they don't gate the result).
+
+The checks in step 9 are defined once in
+[scripts/ods_quality_checks.py](scripts/ods_quality_checks.py). The notebook
+embeds that file verbatim, and `validate_fabric_data.py` imports it, so both
+paths run identical SQL. A query error counts as FAIL. A check whose tables
+aren't deployed yet (e.g. the `ops_*` tables before Hospital Operations Setup
+has run) is reported as SKIPPED and is never counted as a pass. The local
+validator exits with code 1 if any of these checks fail.
 
 Run it after every generator run (manually, or chained in a Fabric pipeline/schedule).
 
@@ -432,6 +447,11 @@ after the next catch-up.
   counts, fail on violated invariants, and avoid treating skipped or failed
   queries as passing. Exercise them against a small generated cohort and a
   read-only audit of the existing ODS.
+  **Partially addressed:** the diagnosis-family and simulated-stay checks now
+  run in both paths via the shared `scripts/ods_quality_checks.py`, with
+  error→FAIL, SKIPPED≠PASS and a non-zero exit code. The older sections
+  (orphans, duplicates, NULLs) still print errors as skipped rather than
+  failing, and the clinical/financial checks above are not yet written.
 - [ ] **P1 - Plan a targeted historical-data repair after prospective fixes.**
   The generator appends days after `MAX(encounter_date)` and will not correct
   older rows. Inventory affected ODS rows by table and date, preserve linked
@@ -453,7 +473,11 @@ after the next catch-up.
   is gated on the planned release rather than on iteration count, and ED-to-ICU
   escalation is limited to the flagged share. A live bounded run showed zero
   broken episode linkage and zero stays discharged before their planned date.
-  These checks still need to be added to the two validation paths.
+  The LOS-plan, premature-discharge, bed-plan and ICU-routing checks now run
+  in both validation paths. Still open: ordered movement timestamps, no
+  simultaneously occupied beds per encounter, and the realized ICU share
+  (33% of 24 planned stays vs the 18% target; see the ICU note in
+  `docs/LENGTH_OF_STAY_BENCHMARKS.md`).
 
 ---
 

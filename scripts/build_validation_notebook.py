@@ -41,7 +41,8 @@ Runs a suite of SQL data-quality checks against the Healthcare ODS database:
 6. NULL checks on key columns
 7. Reference data presence (hospitals/departments/date_dim)
 8. Patient-location tables & views
-9. Overall PASS/FAIL summary
+9. Diagnosis families (`icd_reference`) and simulated-stay length-of-stay checks
+10. Overall PASS/FAIL summary
 
 Safe to run any time (read-only). Can be scheduled to run after each
 Healthcare_Data_Generator run, or on-demand via the Fabric Jobs API.
@@ -300,6 +301,43 @@ for t in ('hospitals', 'departments', 'date_dim'):
 """)
 
 # ---------------------------------------------------------------------------
+# Embedded verbatim so the Fabric notebook stays self-contained while sharing
+# one definition of these checks with scripts/validate_fabric_data.py.
+_QUALITY_CHECKS_SOURCE = (Path(__file__).resolve().parent / 'ods_quality_checks.py').read_text(encoding='utf-8')
+code(_QUALITY_CHECKS_SOURCE + r"""
+
+# ============================================================================
+# Diagnosis families & simulated stays
+# ============================================================================
+print('\nDiagnosis families & simulated stays')
+print('-' * 60)
+
+SKIPPED_CHECKS = []
+
+
+def _fetch_rows(sql):
+    return list(pd.read_sql(sql, ENGINE).itertuples(index=False, name=None))
+
+
+def _fetch_table(sql):
+    frame = pd.read_sql(sql, ENGINE)
+    return list(frame.columns), list(frame.itertuples(index=False, name=None))
+
+
+for _name, _status, _detail in run_quality_checks(_fetch_rows, set(TABLE_COUNTS)):
+    if _status == 'SKIP':
+        # Not deployed is reported, never counted as a pass.
+        SKIPPED_CHECKS.append((_name, _detail))
+        print(f'  \u2013 {_name}: SKIPPED ({_detail})')
+    else:
+        record(_name, _status == 'PASS', _detail)
+
+for _name, _columns, _rows in run_quality_summaries(_fetch_table, set(TABLE_COUNTS)):
+    print(f'\n  {_name}')
+    print(f'    ({_rows})' if _columns is None else format_table(_columns, _rows))
+""")
+
+# ---------------------------------------------------------------------------
 code(r"""# ============================================================================
 # CELL 8: Views Check & Overall Summary
 # ============================================================================
@@ -324,6 +362,10 @@ passed = [c for c in CHECK_RESULTS if c[1]]
 failed = [c for c in CHECK_RESULTS if not c[1]]
 
 print(f'Checks passed: {len(passed)}/{len(CHECK_RESULTS)}')
+if SKIPPED_CHECKS:
+    print(f'Checks skipped (not deployed, not counted as passing): {len(SKIPPED_CHECKS)}')
+    for name, detail in SKIPPED_CHECKS:
+        print(f'  \u2013 {name}: {detail}')
 if failed:
     print('\nFAILED CHECKS:')
     for name, _, detail in failed:
