@@ -764,6 +764,120 @@ DIAGNOSIS_DETAILS['J11.00'] = {'description': 'Influenza with pneumonia, unspeci
 DIAGNOSIS_DETAILS['W19.XXXA'] = {'description': 'Unspecified fall', 'complaints': ['Fall', 'Trauma', 'Injury', 'Fracture']}
 DIAGNOSIS_DETAILS['V89.2'] = {'description': 'Unspecified motor vehicle accident', 'complaints': ['Accident', 'Trauma', 'Injury']}
 
+# ---------------------------------------------------------------------------
+# ICD-10 reference dimension.
+#
+# Single source of truth for code -> description, clinical family and official
+# ICD-10-CM chapter. Every code reachable from get_specialty_diagnoses(), from
+# DIAGNOSIS_DETAILS and from the hospital-operations simulator appears here, so
+# a generated diagnosis can never fall back to an unusable placeholder
+# description. Clinical families intentionally match the condition families in
+# docs/LENGTH_OF_STAY_BENCHMARKS.md so length-of-stay work and analytics share
+# one grouping.
+#
+# Chapter ranges are the real ICD-10-CM ranges, which is why the chapter cannot
+# be derived from the leading letter alone: neoplasms span C00-D49, blood and
+# immune disorders resume at D50-D89, and injury spans S00-T88.
+# Layout: code -> (description, clinical_family, chapter, chapter_range)
+# ---------------------------------------------------------------------------
+ICD_REFERENCE = {
+    'A08.39':  ('Other viral enteritis', 'Infectious Disease', 'Certain infectious and parasitic diseases', 'A00-B99'),
+    'C34.9':   ('Malignant neoplasm of unspecified part of bronchus or lung', 'Oncology', 'Neoplasms', 'C00-D49'),
+    'C50.9':   ('Malignant neoplasm of breast, unspecified site', 'Oncology', 'Neoplasms', 'C00-D49'),
+    'C80.1':   ('Malignant (primary) neoplasm, unspecified', 'Oncology', 'Neoplasms', 'C00-D49'),
+    'C82.9':   ('Follicular lymphoma, unspecified', 'Oncology', 'Neoplasms', 'C00-D49'),
+    'C85.9':   ('Non-Hodgkin lymphoma, unspecified', 'Oncology', 'Neoplasms', 'C00-D49'),
+    'C91.0':   ('Acute lymphoblastic leukemia', 'Oncology', 'Neoplasms', 'C00-D49'),
+    'C92.0':   ('Acute myeloblastic leukemia', 'Oncology', 'Neoplasms', 'C00-D49'),
+    'D70.9':   ('Neutropenia, unspecified', 'Hematology', 'Diseases of the blood and blood-forming organs', 'D50-D89'),
+    'E11.9':   ('Type 2 diabetes mellitus without complications', 'Endocrine & Metabolic', 'Endocrine, nutritional and metabolic diseases', 'E00-E89'),
+    'E78.5':   ('Hyperlipidemia, unspecified', 'Endocrine & Metabolic', 'Endocrine, nutritional and metabolic diseases', 'E00-E89'),
+    'F32.9':   ('Major depressive disorder, single episode, unspecified', 'Behavioral Health', 'Mental, behavioral and neurodevelopmental disorders', 'F01-F99'),
+    'F33.9':   ('Major depressive disorder, recurrent, unspecified', 'Behavioral Health', 'Mental, behavioral and neurodevelopmental disorders', 'F01-F99'),
+    'F41.9':   ('Anxiety disorder, unspecified', 'Behavioral Health', 'Mental, behavioral and neurodevelopmental disorders', 'F01-F99'),
+    'G40.9':   ('Epilepsy, unspecified', 'Neurology', 'Diseases of the nervous system', 'G00-G99'),
+    'G43.909': ('Migraine, unspecified, not intractable, without status migrainosus', 'Neurology', 'Diseases of the nervous system', 'G00-G99'),
+    'G81.9':   ('Hemiplegia, unspecified affecting unspecified side', 'Neurology', 'Diseases of the nervous system', 'G00-G99'),
+    'H66.001': ('Acute suppurative otitis media without spontaneous rupture of ear drum, right ear', 'Ear, Nose & Throat', 'Diseases of the ear and mastoid process', 'H60-H95'),
+    'I10':     ('Essential (primary) hypertension', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I20.0':   ('Unstable angina', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I21.0':   ('ST elevation myocardial infarction of anterior wall', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I21.9':   ('Acute myocardial infarction, unspecified', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I25.10':  ('Atherosclerotic heart disease of native coronary artery without angina pectoris', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I26.9':   ('Pulmonary embolism without acute cor pulmonale', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I47.9':   ('Paroxysmal tachycardia, unspecified', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I48.91':  ('Unspecified atrial fibrillation', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I50.9':   ('Heart failure, unspecified', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I63.9':   ('Cerebral infarction, unspecified', 'Neurology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I69.3':   ('Sequelae of cerebral infarction', 'Neurology', 'Diseases of the circulatory system', 'I00-I99'),
+    'I71.0':   ('Dissection of aorta', 'Cardiology', 'Diseases of the circulatory system', 'I00-I99'),
+    'J00':     ('Acute nasopharyngitis (common cold)', 'Respiratory', 'Diseases of the respiratory system', 'J00-J99'),
+    'J11.00':  ('Influenza with pneumonia, unspecified type', 'Respiratory', 'Diseases of the respiratory system', 'J00-J99'),
+    'J18.9':   ('Pneumonia, unspecified organism', 'Respiratory', 'Diseases of the respiratory system', 'J00-J99'),
+    'J44.9':   ('Chronic obstructive pulmonary disease, unspecified', 'Respiratory', 'Diseases of the respiratory system', 'J00-J99'),
+    'J45.9':   ('Other and unspecified asthma', 'Respiratory', 'Diseases of the respiratory system', 'J00-J99'),
+    'J45.901': ('Unspecified asthma with (acute) exacerbation', 'Respiratory', 'Diseases of the respiratory system', 'J00-J99'),
+    'K21.9':   ('Gastro-esophageal reflux disease without esophagitis', 'Gastroenterology', 'Diseases of the digestive system', 'K00-K95'),
+    'K37':     ('Unspecified appendicitis', 'Gastroenterology', 'Diseases of the digestive system', 'K00-K95'),
+    'L03.90':  ('Cellulitis, unspecified', 'Infectious Disease', 'Diseases of the skin and subcutaneous tissue', 'L00-L99'),
+    'M16.1':   ('Unilateral primary osteoarthritis, unspecified hip', 'Musculoskeletal', 'Diseases of the musculoskeletal system and connective tissue', 'M00-M99'),
+    'M17.9':   ('Osteoarthritis of knee, unspecified', 'Musculoskeletal', 'Diseases of the musculoskeletal system and connective tissue', 'M00-M99'),
+    'M17.11':  ('Unilateral primary osteoarthritis, right knee', 'Musculoskeletal', 'Diseases of the musculoskeletal system and connective tissue', 'M00-M99'),
+    'M54.5':   ('Low back pain', 'Musculoskeletal', 'Diseases of the musculoskeletal system and connective tissue', 'M00-M99'),
+    'M62.81':  ('Muscle weakness (generalized)', 'Musculoskeletal', 'Diseases of the musculoskeletal system and connective tissue', 'M00-M99'),
+    'M79.3':   ('Panniculitis, unspecified', 'Musculoskeletal', 'Diseases of the musculoskeletal system and connective tissue', 'M00-M99'),
+    'N18.9':   ('Chronic kidney disease, unspecified', 'Renal & Genitourinary', 'Diseases of the genitourinary system', 'N00-N99'),
+    'N28.1':   ('Cyst of kidney, acquired', 'Renal & Genitourinary', 'Diseases of the genitourinary system', 'N00-N99'),
+    'N39.0':   ('Urinary tract infection, site not specified', 'Renal & Genitourinary', 'Diseases of the genitourinary system', 'N00-N99'),
+    'R05':     ('Cough', 'Signs & Symptoms', 'Symptoms, signs and abnormal clinical and laboratory findings', 'R00-R99'),
+    'R10.9':   ('Unspecified abdominal pain', 'Signs & Symptoms', 'Symptoms, signs and abnormal clinical and laboratory findings', 'R00-R99'),
+    'R26':     ('Abnormalities of gait and mobility', 'Signs & Symptoms', 'Symptoms, signs and abnormal clinical and laboratory findings', 'R00-R99'),
+    'R50.82':  ('Postprocedural fever', 'Signs & Symptoms', 'Symptoms, signs and abnormal clinical and laboratory findings', 'R00-R99'),
+    'R50.9':   ('Fever, unspecified', 'Signs & Symptoms', 'Symptoms, signs and abnormal clinical and laboratory findings', 'R00-R99'),
+    'R51':     ('Headache', 'Signs & Symptoms', 'Symptoms, signs and abnormal clinical and laboratory findings', 'R00-R99'),
+    'R55':     ('Syncope and collapse', 'Signs & Symptoms', 'Symptoms, signs and abnormal clinical and laboratory findings', 'R00-R99'),
+    'R65.21':  ('Severe sepsis with septic shock', 'Infectious Disease', 'Symptoms, signs and abnormal clinical and laboratory findings', 'R00-R99'),
+    'A41.9':   ('Sepsis, unspecified organism', 'Infectious Disease', 'Certain infectious and parasitic diseases', 'A00-B99'),
+    'S72.1':   ('Pertrochanteric fracture of femur', 'Injury & Trauma', 'Injury, poisoning and certain other consequences of external causes', 'S00-T88'),
+    'S72.9':   ('Unspecified fracture of femur', 'Injury & Trauma', 'Injury, poisoning and certain other consequences of external causes', 'S00-T88'),
+    'W19.XXXA': ('Unspecified fall, initial encounter', 'Injury & Trauma', 'External causes of morbidity', 'V00-Y99'),
+    'V89.2':   ('Person injured in unspecified motor-vehicle accident, traffic', 'Injury & Trauma', 'External causes of morbidity', 'V00-Y99'),
+    'Z00.00':  ('Encounter for general adult medical examination without abnormal findings', 'Preventive & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z01.419': ('Encounter for gynecological examination without abnormal findings', 'Preventive & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z12.31':  ('Encounter for screening mammogram for malignant neoplasm of breast', 'Preventive & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z23':     ('Encounter for immunization', 'Preventive & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z50.0':   ('Encounter for cardiac rehabilitation', 'Rehabilitation & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z50.1':   ('Other physical therapy', 'Rehabilitation & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z51.0':   ('Encounter for antineoplastic radiation therapy', 'Oncology', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z51.11':  ('Encounter for antineoplastic chemotherapy', 'Oncology', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z54':     ('Convalescence', 'Rehabilitation & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z79.899': ('Other long term (current) drug therapy', 'Preventive & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z87.440': ('Personal history of other diseases of respiratory system', 'Preventive & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z95.1':   ('Presence of aortocoronary bypass graft', 'Preventive & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+    'Z98.891': ('History of bariatric surgery', 'Preventive & Aftercare', 'Factors influencing health status and contact with health services', 'Z00-Z99'),
+}
+
+
+def describe_icd_code(icd_code):
+    # Authoritative description for a code, preferring the reference dimension.
+    # Returns None when a code is genuinely unknown so callers can fail loudly
+    # rather than silently writing an unusable placeholder into the ODS.
+    if icd_code in ICD_REFERENCE:
+        return ICD_REFERENCE[icd_code][0]
+    detail = DIAGNOSIS_DETAILS.get(icd_code)
+    if detail and detail.get('description'):
+        return detail['description']
+    return None
+
+
+def build_icd_reference_frame():
+    # Reference dimension rows, one per ICD-10 code used by the generator.
+    return pd.DataFrame(
+        [{'icd_code': code, 'description': desc, 'clinical_family': family,
+          'icd_chapter': chapter, 'chapter_code_range': code_range}
+         for code, (desc, family, chapter, code_range) in sorted(ICD_REFERENCE.items())]
+    )
+
 WEATHER_IMPACT = {
     'rain': {'flu_multiplier': 1.5, 'fall_multiplier': 1.8, 'accident_multiplier': 1.3},
     'snow': {'flu_multiplier': 2.0, 'fall_multiplier': 2.5, 'accident_multiplier': 2.0},
@@ -1260,13 +1374,14 @@ def generate_patients(n, as_of_date=None):
         dob = fake.date_of_birth(minimum_age=0, maximum_age=100)
         age = as_of.year - pd.to_datetime(dob).year - ((as_of.month, as_of.day) < (pd.to_datetime(dob).month, pd.to_datetime(dob).day))
         payer = get_payer_for_patient(age, hospital.get('specialty', 'general'))
+        gender = fake.random_element(['M', 'F'])
         rows.append({
             'hospital_id': hospital['hospital_id'],
-            'first_name': fake.first_name(),
+            'first_name': fake.first_name_male() if gender == 'M' else fake.first_name_female(),
             'last_name': fake.last_name(),
             'date_of_birth': dob,
             'age': age,
-            'gender': fake.random_element(['M', 'F']),
+            'gender': gender,
             'address': fake.address().replace('\n', ', '),
             'phone': fake.phone_number(),
             'email': fake.email(),
@@ -2051,11 +2166,16 @@ else:
             hosp_diagnosis_count = max(1, int(DIAGNOSIS_COUNT_PER_DAY * (len(hosp_encounters) / max(1, len(encounters_df)))))
             for _ in range(hosp_diagnosis_count):
                 icd_code = sample_diagnosis_for_hospital(specialty, day.month, weather_condition=weather_condition)
-                details = DIAGNOSIS_DETAILS.get(icd_code, {'description': 'Unknown diagnosis'})
+                description = describe_icd_code(icd_code)
+                if description is None:
+                    raise KeyError(
+                        f'ICD code {icd_code} is missing from ICD_REFERENCE. Add it there '
+                        f'rather than writing a placeholder description into the ODS.'
+                    )
                 diagnoses_rows.append({
                     'encounter_id': int(random.choice(hosp_encounters['encounter_id'].tolist())),
                     'patient_id': random.randint(next_ids['patient'], next_ids['patient'] + PATIENT_COUNT_PER_DAY - 1),
-                    'icd_code': icd_code, 'description': details['description'], 'onset_date': day,
+                    'icd_code': icd_code, 'description': description, 'onset_date': day,
                     'status': random.choice(['Active', 'Resolved', 'Chronic'])
                 })
         diagnoses_df = pd.DataFrame(diagnoses_rows)
@@ -2148,6 +2268,39 @@ print('\u2500' * 60)
 
 if not SINGLE_ENGINE:
     print('\u274c Database engine not available.')
+else:
+    # Reference dimension + description repair run on every pass, independent of
+    # whether new days were generated, so an existing database gains the
+    # dimension and has legacy placeholder descriptions corrected in place.
+    icd_reference_df = build_icd_reference_frame()
+    icd_reference_df.to_sql('icd_reference', SINGLE_ENGINE, if_exists='replace', index=False)
+    print(f'  \u2713 icd_reference refreshed: {len(icd_reference_df)} codes, '
+          f'{icd_reference_df["clinical_family"].nunique()} clinical families')
+
+    try:
+        with SINGLE_ENGINE.begin() as conn:
+            repaired = conn.execute(text(
+                'UPDATE d SET description = r.description '
+                'FROM dbo.diagnoses d JOIN dbo.icd_reference r ON r.icd_code = d.icd_code '
+                "WHERE d.description IS NULL OR d.description = '' "
+                "OR d.description = 'Unknown diagnosis'"
+            )).rowcount
+        if repaired:
+            print(f'  \u2713 Repaired {repaired:,} diagnosis rows that had no usable description')
+        else:
+            print('  \u2713 No placeholder diagnosis descriptions remain')
+        orphans = query_db(
+            'SELECT COUNT(*) AS n FROM dbo.diagnoses d '
+            'LEFT JOIN dbo.icd_reference r ON r.icd_code = d.icd_code WHERE r.icd_code IS NULL'
+        )
+        if orphans is not None and int(orphans.iloc[0]['n']) > 0:
+            print(f'  \u26A0\ufe0f  {int(orphans.iloc[0]["n"]):,} diagnosis rows use a code missing '
+                  f'from ICD_REFERENCE \u2014 add it so the family dimension stays complete')
+    except Exception as e:
+        print(f'  \u26A0\ufe0f  Could not repair diagnosis descriptions: {e}')
+
+if not SINGLE_ENGINE:
+    pass
 elif not NEEDS_GENERATION:
     print('\u2713 No generation occurred this run \u2014 skipping refresh.')
 else:
@@ -2158,14 +2311,40 @@ else:
 
     save_weather_cache()
 
+    # run_logs predates the day-range catch-up model and older databases still
+    # carry only the per-entity count columns. Add the columns this notebook
+    # writes, idempotently, so logging self-heals in place instead of failing
+    # silently into the exception handler below.
+    run_log_columns = [
+        ('start_date', 'DATE'),
+        ('end_date', 'DATE'),
+        ('days_generated', 'INT'),
+        ('admissions_generated', 'BIGINT'),
+    ]
+    try:
+        with SINGLE_ENGINE.begin() as conn:
+            for column_name, column_type in run_log_columns:
+                conn.execute(text(
+                    f"IF COL_LENGTH('dbo.run_logs', '{column_name}') IS NULL "
+                    f'ALTER TABLE dbo.run_logs ADD {column_name} {column_type} NULL'
+                ))
+    except Exception as e:
+        print(f'  \u26A0\ufe0f  Could not upgrade run_logs schema: {e}')
+
     run_log = pd.DataFrame([{
         'run_timestamp': datetime.now(),
+        'frequency': 'catchup',
         'start_date': START_DATE,
         'end_date': END_DATE,
-        'days_generated': (END_DATE - START_DATE).days + 1
+        'days_generated': (END_DATE - START_DATE).days + 1,
+        'encounters_generated': int(total_encounters),
+        'admissions_generated': int(total_admissions),
     }])
     try:
         run_log.to_sql('run_logs', SINGLE_ENGINE, if_exists='append', index=False)
+        print(f'  \u2713 run_logs updated: {int(total_encounters):,} encounters, '
+              f'{int(total_admissions):,} admissions across '
+              f'{(END_DATE - START_DATE).days + 1} day(s)')
     except Exception as e:
         print(f'  \u26A0\ufe0f  Could not write run_logs: {e}')
 
@@ -2188,7 +2367,7 @@ else:
         'hospitals', 'departments', 'patients', 'doctors', 'encounters', 'procedures',
         'diagnoses', 'medications', 'labs', 'insurance', 'billing', 'admissions',
         'date_dim', 'floors', 'rooms', 'beds', 'patient_bed_assignments',
-        'hospital_department_beds', 'run_logs'
+        'hospital_department_beds', 'icd_reference', 'run_logs'
     ]
     total_rows = 0
     for table in tables_to_check:
