@@ -245,10 +245,18 @@ class PatientFlowTests(unittest.TestCase):
         # Regression: every ED patient selected for transfer was forced into
         # Critical Care, putting far more of the census in the ICU than the
         # published ~18% of admissions.
+        # Weight by the live admission mix (general/pediatric/fallback 65%,
+        # cardiac 15%, cancer 10%, rehab 10%). Calibrating against the flat
+        # 16-family average instead realized ~33% ICU on a live run.
+        admitted = (["general"] * 65 + ["cardiac"] * 15 + ["cancer"] * 10 + ["rehab"] * 10)
+        families = [flow._story_family(s) for s in admitted]
+        calibration = flow._icu_calibration(families)
         self.assertAlmostEqual(
-            sum(flow._icu_admit_probability(f) for f in flow._LOS_BENCHMARKS)
-            / len(flow._LOS_BENCHMARKS),
+            sum(flow._icu_admit_probability(f, calibration) for f in families) / len(families),
             flow._ICU_TARGET_SHARE, places=6)
+        flat = flow._icu_calibration([])
+        self.assertGreater(
+            sum(flow._icu_admit_probability(f, flat) for f in families) / len(families), 0.25)
 
         self.db.beds[10] = dict(bed_id=10, occupancy_status="Occupied", admission_id=7,
                                 assigned_datetime=self.now, expected_release_datetime=None)

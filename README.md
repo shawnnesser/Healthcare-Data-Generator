@@ -474,10 +474,10 @@ after the next catch-up.
   escalation is limited to the flagged share. A live bounded run showed zero
   broken episode linkage and zero stays discharged before their planned date.
   The LOS-plan, premature-discharge, bed-plan and ICU-routing checks now run
-  in both validation paths. Still open: ordered movement timestamps, no
-  simultaneously occupied beds per encounter, and the realized ICU share
-  (33% of 24 planned stays vs the 18% target; see the ICU note in
-  `docs/LENGTH_OF_STAY_BENCHMARKS.md`).
+  in both validation paths. Still open: ordered movement timestamps and no
+  simultaneously occupied beds per encounter. The ICU share is now calibrated
+  to the admitted family mix (15.1% of 186 planned stays vs the 18% target;
+  see `docs/LENGTH_OF_STAY_BENCHMARKS.md`).
 
 ---
 

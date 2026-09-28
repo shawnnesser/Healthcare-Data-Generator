@@ -97,10 +97,10 @@ _BASELINE_LOS = {"ed_dwell_hours": 4.0, "los_mean_days": 5.1, "los_median_days":
 # CCU -- so using them directly would put most of the census in the ICU. They
 # are rescaled by a single factor to preserve the published ordering between
 # conditions while landing the blended rate on the published aggregate.
+# The factor is weighted by the families actually being admitted: averaging
+# the full catalog equally over-flags ICU when admissions are dominated by
+# high-acuity families (the live mix is ~65% Respiratory).
 _ICU_TARGET_SHARE = 0.18
-_ICU_CALIBRATION = _ICU_TARGET_SHARE / (
-    sum(row["icu_share"] for row in _LOS_BENCHMARKS.values()) / len(_LOS_BENCHMARKS)
-)
 
 
 def _los_profile(clinical_family: Optional[str]) -> dict:
@@ -108,10 +108,23 @@ def _los_profile(clinical_family: Optional[str]) -> dict:
     return _LOS_BENCHMARKS.get(clinical_family or "", _BASELINE_LOS)
 
 
-def _icu_admit_probability(clinical_family: Optional[str]) -> float:
+def _icu_calibration(admitted_families) -> float:
+    """Scale factor that lands the admission-weighted ICU rate on the target."""
+    shares = [_los_profile(family)["icu_share"] for family in admitted_families]
+    if not shares:
+        shares = [row["icu_share"] for row in _LOS_BENCHMARKS.values()]
+    mean_share = sum(shares) / len(shares)
+    return _ICU_TARGET_SHARE / mean_share if mean_share > 0 else 1.0
+
+
+def _icu_admit_probability(clinical_family: Optional[str], calibration: float) -> float:
     """Calibrated probability that this family's stay needs critical care."""
     raw = _los_profile(clinical_family)["icu_share"]
-    return min(1.0, max(0.0, raw * _ICU_CALIBRATION))
+    return min(1.0, max(0.0, raw * calibration))
+
+
+def _story_family(hospital_specialty: str) -> str:
+    return _CLINICAL_STORIES.get(hospital_specialty, _CLINICAL_STORIES["general"])[-1]
 
 
 # Each story is (icd_code, description, chief_complaint, drug, dosage,
@@ -232,6 +245,7 @@ def admit_patients(engine: Engine, simulated_now: pd.Timestamp, run_id: int, bat
     if candidates.empty:
         return 0
     units = _flow_query("SELECT unit_id, hospital_id, source_floor_number, unit_type FROM dbo.ops_unit", engine)
+    icu_calibration = _icu_calibration(_story_family(str(s)) for s in candidates["specialty"])
     processed = 0
     bed_event_id = _flow_next_id("ops_bed_state_event", "bed_state_event_id", engine)
     movement_id = _flow_next_id("ops_patient_movement", "movement_id", engine)
@@ -256,7 +270,7 @@ def admit_patients(engine: Engine, simulated_now: pd.Timestamp, run_id: int, bat
                 profile["los_mean_days"], profile["los_median_days"], rng
             ) * max(0.1, scenario.discharge_delay_multiplier)
             ed_dwell_hours = max(0.25, profile["ed_dwell_hours"] * rng.uniform(0.6, 1.6))
-            icu_expected = rng.random() < _icu_admit_probability(family)
+            icu_expected = rng.random() < _icu_admit_probability(family, icu_calibration)
             if icu_expected:
                 target_los_hours += profile["icu_los_days"] * 24.0
             # Round before deriving the timestamp so the stored target and the

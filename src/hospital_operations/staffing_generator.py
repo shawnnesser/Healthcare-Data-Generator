@@ -206,7 +206,9 @@ def compute_staffing_state(engine: Engine, run_id: Optional[int] = None, staffin
             )
             charge_id = int(charge.iloc[0]["staff_id"]) if not charge.empty else None
             open_shift = max(0, required_rn - present_rn)
-            coverage_pct = round(100.0 * present_rn / required_rn, 1) if required_rn > 0 else 100.0
+            # Capped to the decimal(5,2) column: a nearly empty unit with a full
+            # roster otherwise overflows (e.g. 11 RNs for 1 required = 1100%).
+            coverage_pct = min(999.9, round(100.0 * present_rn / required_rn, 1)) if required_rn > 0 else 100.0
             status = "Critical" if coverage_pct < 70 else ("Watch" if coverage_pct < 90 else "Normal")
 
             upsert_row(conn, "ops_staffing_state", ["unit_id"], {

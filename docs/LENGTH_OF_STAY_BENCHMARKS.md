@@ -340,15 +340,16 @@ rate equals the published `_ICU_TARGET_SHARE` of 18% of admissions while the
 relative ordering between conditions is preserved. This keeps both published
 facts: the aggregate share and the condition-level ranking.
 
-**Known gap: the realized ICU share runs high.** The calibration factor
-averages across all 16 families *unweighted*, but the simulator currently
-admits through only five specialty stories. Those map to Respiratory
-(general and pediatric), Cardiology, Hematology and Musculoskeletal, and the
-two highest-ICU families dominate the draw. The live bounded run showed
-33.3% ICU-flagged (8 of 24) against the 18% target. Fix options: calibrate
-against the families the stories actually admit, or widen the story catalog
-to cover every family. The validators report this share as an info summary
-rather than a gate.
+**ICU calibration is weighted by the admitted mix.** The simulator admits
+through five specialty stories (general and pediatric map to Respiratory,
+cardiac to Cardiology, cancer to Hematology, rehab to Musculoskeletal), and
+the live admission mix is about 65% Respiratory. Averaging all 16 families
+equally therefore over-flagged ICU: a first live run showed 33.3% (8 of 24).
+The factor is now computed on each admit pass from the families of the
+admission candidates, so it stays on target as the hospital mix or story
+catalog changes. A 60-iteration live run then showed 15.1% ICU-flagged across
+186 planned stays (18% target, about ±2.8 points of sampling error). The
+validators report this share as an info summary rather than a gate.
 
 Verified on a live bounded run (20 iterations, 24 new episodes): every episode
 carried a family, a drawn length of stay, an ED dwell and an ICU flag; the
